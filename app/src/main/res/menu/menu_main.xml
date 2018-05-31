@@ -1,0 +1,11 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.polklabs.roomy.MainActivity">
+    <item
+        android:id="@+id/action_refresh"
+        android:orderInCategory="300"
+        android:title="User"
+        android:icon="@drawable/clockwise_rotation"
+        app:showAsAction="ifRoom" ></item>
+</menu>
