@@ -45,10 +45,23 @@
         android:layout_weight="1">
 
         <LinearLayout
-            android:id="@+id/popularList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/popularList"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="visible"></LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/localList"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone"></LinearLayout>
 
         </LinearLayout>
     </ScrollView>

@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private Context mContext;
 
     private LinearLayout mPopularList;
-    //private LinearLayout mLocalList;
+    private LinearLayout mLocalList;
     private Button mPopularButton;
     private Button mLocalButton;
 
@@ -49,13 +49,14 @@ public class MainActivity extends AppCompatActivity {
         mPopularList = findViewById(R.id.popularList);
         mPopularButton = findViewById(R.id.buttonPopular);
 
+        mLocalList = findViewById(R.id.localList);
         mLocalButton = findViewById(R.id.buttonLocal);
 
         mPopularButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mPopularList.setVisibility(View.VISIBLE);
-                //mLocalList
+                mLocalList.setVisibility(View.GONE);
                 mPopularButton.setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_blue));
                 mLocalButton.setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_grey));
             }
@@ -64,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mPopularList.setVisibility(View.GONE);
-                //mLocalList
+                mLocalList.setVisibility(View.VISIBLE);
                 mPopularButton.setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_grey));
                 mLocalButton.setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_blue));
             }
@@ -81,11 +82,11 @@ public class MainActivity extends AppCompatActivity {
         appState.chatRoom = new ChatRoom(new ChatRoom.Listener() {
             @Override
             public void setText(String text) {
-                createPopularList(text);
+                createList(text, true);
             }
             @Override
             public void setText2(String text){
-                createLocalList(text);
+                createList(text, false);
             }
         }, "init");
         appState.chatRoom.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
@@ -113,11 +114,16 @@ public class MainActivity extends AppCompatActivity {
         //Start activity
     }
 
-    private void createPopularList(String text){
-        Log.d(APP_NAME, "Text: "+text);
+    private void createList(String text, boolean isPopular){
+        Log.d(APP_NAME, "Create list: "+text);
+
+        LinearLayout mList = mPopularList;
+        if(!isPopular){
+            mList = mLocalList;
+        }
 
         final float scale = mContext.getResources().getDisplayMetrics().density;
-        mPopularList.removeAllViews();
+        mList.removeAllViews();
 
         if(text.equals("")){
             TextView none = new TextView(mContext);
@@ -125,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
             none.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
             int pixels = (int)(16*scale+0.5f);
             none.setPadding(pixels, pixels, pixels, pixels);
-            mPopularList.addView(none);
+            mList.addView(none);
             return;
         }
 
@@ -150,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
                 newLayout.setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_grey));
             }
             newLayout.setOnClickListener(roomClick);
-            mPopularList.addView(newLayout);
+            mList.addView(newLayout);
 
             TextView textName = new TextView(mContext);
             ImageView imageLock = new ImageView(mContext);
@@ -178,10 +184,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void createLocalList(String text) {
-        Log.d(APP_NAME, "Create Local list: "+text);
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -200,11 +202,11 @@ public class MainActivity extends AppCompatActivity {
             appState.chatRoom = new ChatRoom(new ChatRoom.Listener() {
                 @Override
                 public void setText(String text) {
-                    createPopularList(text);
+                    createList(text, true);
                 }
                 @Override
                 public void setText2(String text){
-                    createLocalList(text);
+                    createList(text, false);
                 }
             }, "init");
             appState.chatRoom.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);

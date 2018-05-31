@@ -33,6 +33,10 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     private Listener listener;
     private String[] paramArray;
 
+    public boolean loadedRoom = false;
+
+    private String options = "";
+
     @Override
     protected String doInBackground(String... params){
         switch (paramArray[0]) {
@@ -45,11 +49,27 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                     Log.d("Roomy", "Exception: " + e);
                     popular = "";
                 }
-                publishProgress(popular);
-                return popular;
+                Log.d("Roomy", popular);
+                String[] split = popular.split("/");
+                if(split.length < 2){
+                    split = new String[2];
+                    if(popular.length() > 1) {
+                        split[0] = popular.substring(0, popular.length() - 2);
+                    }else{
+                        split[0] = "";
+                    }
+                    split[1]="";
+                }
+                publishProgress(split[0]);
+                return split[1];
 
             case "join":
                 boolean joined = false;
+
+                if(paramArray.length > 4){
+                    options = paramArray[4];
+                }
+
                 try {
                     init();
                     joined = join(paramArray[1], paramArray[2], paramArray[3]);
@@ -62,9 +82,19 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                 } else {
                     try{
                         sock.close();
-                    }catch (Exception e){}
+                    }catch (Exception e){
+                        Log.d("Roomy", "Couldn't close room");
+                    }
                     return(errorMessage);
                 }
+        }
+
+        while(!loadedRoom){
+            try {
+                Thread.sleep(100);
+            }catch(Exception e){
+                Log.d("Roomy","Sleep error");
+            }
         }
 
         startListener();
@@ -110,7 +140,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     //***************************************************************************/
 
     private static final    String IP      = "pi1.polklabs.com";   //pi1.polklabs.com
-    //private static final    String IP      = "169.231.45.90";
+    //private static final    String IP      = "192.168.0.16";
     private static final    int    PORT    = 3301;          //Server port
     public          String username;                //Users username
     public          Socket sock;                    //Socket to server
@@ -130,8 +160,6 @@ public class ChatRoom extends AsyncTask<String, String, String> {
         this.paramArray = params;
         //Generate Private Public key pair
         DE = new dataEncrypt(1024, this);
-        //input = null;
-        Log.d("Roomy", "Constructor done");
     }
 
     //***************************************************************************
@@ -169,7 +197,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
             boolean newRm = false;
             if(DE.decryptText(in.readUTF()).equals("NEW")){
                 newRm = true;
-                out.writeUTF(DE.encryptText("ACK"));
+                out.writeUTF(DE.encryptText("ACK"+options));
             }
             setupLevel++;
             //******************************************************************
@@ -179,7 +207,8 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                 errorMessage = "Current SetupLevel: "+setupLevel+", Level 2 required.";
                 return false;
             }
-            if(newRm || DE.decryptText(in.readUTF()).equals("PASSWORD")){
+            String passMessage;
+            if(newRm || (passMessage=DE.decryptText(in.readUTF())).equals("PASSWORD")){
                 //Send password
                 if(passwordString.equals("")){
                     out.writeUTF(DE.encryptText(""));
@@ -193,6 +222,10 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                         return false;
                     }
                 }
+            }else if(passMessage.equals("NO")){
+                sock.close();
+                errorMessage = "Trying to enter local chat room.";
+                return false;
             }
             setupLevel++;
             //******************************************************************
@@ -397,6 +430,10 @@ public class ChatRoom extends AsyncTask<String, String, String> {
      * @return true if the username/room name is valid
      */
     private static boolean isValid(String string){
+        if(string.equals("")){
+            return false;
+        }
+
         String[] invalidChars = {";"," ", "/"};
         for(String s : invalidChars){
             if(string.contains(s)){

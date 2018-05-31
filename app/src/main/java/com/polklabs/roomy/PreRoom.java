@@ -11,8 +11,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.ScrollView;
@@ -25,8 +27,8 @@ public class PreRoom extends AppCompatActivity {
     AutoCompleteTextView mRoom;
     AutoCompleteTextView mUsername;
     AutoCompleteTextView mPassword;
-    RadioButton mLocal;
-    RadioButton mPopular;
+    CheckBox mLocal;
+    CheckBox mPopular;
     Button mJoin;
     ScrollView mJoinForm;
 
@@ -35,14 +37,14 @@ public class PreRoom extends AppCompatActivity {
     String tRoom = "";
     String tPassword = "";
 
-    Context mContex;
+    Context mContext;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pre_room);
 
-        mContex = getApplicationContext();
+        mContext = getApplicationContext();
 
         mRoom = findViewById(R.id.name);
         mUsername = findViewById(R.id.username);
@@ -86,12 +88,20 @@ public class PreRoom extends AppCompatActivity {
         mJoin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+
+                String localCheck = "N";
+                if(mLocal.isChecked()) localCheck = "Y";
+                String popCheck = "N";
+                if(mPopular.isChecked()) popCheck = "Y";
+
                 appState.chatRoom = new ChatRoom(new ChatRoom.Listener() {
                     @Override
                     public void setText(String text) {
                         if(text.equals("DONE")){
                             //Start next thing
-                            Intent newIntent = new Intent(mContex, Room.class);
+                            Intent newIntent = new Intent(mContext, Room.class);
                             startActivityForResult(newIntent, 120);
                         }
                     }
@@ -99,11 +109,11 @@ public class PreRoom extends AppCompatActivity {
                     @Override
                     public void setText2(String text) {
                         //Called if error
-                        Toast toast = Toast.makeText(mContex, text, Toast.LENGTH_LONG);
+                        Toast toast = Toast.makeText(mContext, text, Toast.LENGTH_LONG);
                         toast.show();
                         showProgress(false);
                     }
-                }, "join", mRoom.getText().toString(), mPassword.getText().toString(), mUsername.getText().toString());
+                }, "join", mRoom.getText().toString(), mPassword.getText().toString(), mUsername.getText().toString(), popCheck+localCheck);
                 showProgress(true);
                 appState.chatRoom.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }

@@ -8,7 +8,5 @@ import java.util.Map;
 
 public class App extends Application{
     ChatRoom chatRoom;
-    String roomName;
-
     Map<String, Bitmap> mBitmapCache = new HashMap<>();
 }

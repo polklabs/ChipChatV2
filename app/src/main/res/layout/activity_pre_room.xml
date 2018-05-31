@@ -73,19 +73,17 @@
 
             </android.support.design.widget.TextInputLayout>
 
-            <RadioButton
+            <CheckBox
                 android:id="@+id/localButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Local Chat Room" />
 
-            <RadioButton
+            <CheckBox
                 android:id="@+id/listedButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="Listed in popular" />
-
+                android:text="Unlisted in Popular" />
 
             <Button
                 android:id="@+id/joinButton"
