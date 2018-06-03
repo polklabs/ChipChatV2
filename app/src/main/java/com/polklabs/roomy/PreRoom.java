@@ -1,12 +1,19 @@
 package com.polklabs.roomy;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,12 +22,18 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.polklabs.roomy.backend.ChatRoom;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
 
 public class PreRoom extends AppCompatActivity {
 
@@ -31,11 +44,14 @@ public class PreRoom extends AppCompatActivity {
     CheckBox mPopular;
     Button mJoin;
     ScrollView mJoinForm;
-
     ProgressBar mProgressbar;
+    TextView mLocation;
 
     String tRoom = "";
     String tPassword = "";
+    String tState = "Unknown";
+    String tCity = "Unknown";
+    boolean bPassword = true;
 
     Context mContext;
 
@@ -54,6 +70,7 @@ public class PreRoom extends AppCompatActivity {
         mJoin = findViewById(R.id.joinButton);
         mProgressbar = findViewById(R.id.progressBar);
         mJoinForm = findViewById(R.id.joinForm);
+        mLocation = findViewById(R.id.location);
 
         final App appState = ((App)getApplication());
 
@@ -61,7 +78,23 @@ public class PreRoom extends AppCompatActivity {
         if (intent != null) {
             tRoom = intent.getStringExtra("name");
             tPassword = intent.getStringExtra("pass");
+            bPassword = intent.getBooleanExtra("hasPass", true);
+            mLocal.setChecked(intent.getBooleanExtra("isLocal", false));
+            mPopular.setChecked(intent.getBooleanExtra("isLocal", false));
         }
+
+        mLocal.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(isChecked) {
+                    mPopular.setChecked(true);
+                    mPopular.setEnabled(false);
+                }else{
+                    mPopular.setChecked(false);
+                    mPopular.setEnabled(true);
+                }
+            }
+        });
 
         if (!tRoom.equals("")) {
             mRoom.setText(tRoom);
@@ -79,11 +112,33 @@ public class PreRoom extends AppCompatActivity {
                 Log.d("Roomy", "Could not set title.");
             }
 
-            if (!tPassword.equals("")) {
+            mPassword.setCompletionHint("Password");
+            mPassword.setHint("Password");
+
+            if (!tPassword.equals("") || !bPassword) {
                 mPassword.setText(tPassword);
                 mPassword.setVisibility(View.GONE);
             }
         }
+
+        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Geocoder gcd = new Geocoder(getBaseContext(), Locale.getDefault());
+            List<Address> addresses;
+            try{
+                addresses = gcd.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                if(addresses.size() > 0){
+                    tState = addresses.get(0).getAdminArea();
+                    tCity = addresses.get(0).getLocality();
+                }
+            }catch(IOException e){
+                tCity = "Unknown";
+                tState = "Unknown";
+            }
+        }
+
+        mLocation.setText((tState+", "+tCity));
 
         mJoin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -91,8 +146,19 @@ public class PreRoom extends AppCompatActivity {
                 InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
+                mPassword.setError(null);
+                mUsername.setError(null);
+                mRoom.setError(null);
+
+                String roomName = mRoom.getText().toString();
+
                 String localCheck = "N";
-                if(mLocal.isChecked()) localCheck = "Y";
+                if(mLocal.isChecked() && !tCity.equals("Unknown") && !tState.equals("Unknown")) {
+                    localCheck = "Y";
+                }else{
+                    tCity = "Unknown";
+                    tState = "Unknown";
+                }
                 String popCheck = "N";
                 if(mPopular.isChecked()) popCheck = "Y";
 
@@ -109,11 +175,32 @@ public class PreRoom extends AppCompatActivity {
                     @Override
                     public void setText2(String text) {
                         //Called if error
-                        Toast toast = Toast.makeText(mContext, text, Toast.LENGTH_LONG);
-                        toast.show();
                         showProgress(false);
+                        String errorM = appState.chatRoom.errorMessage;
+                        switch(appState.chatRoom.errorType){
+                            case 1:
+                                mRoom.setError(errorM);
+                                break;
+                            case 2:
+                                mPassword.setError(errorM);
+                                break;
+                            case 3:
+                                Toast toast = Toast.makeText(mContext, errorM, Toast.LENGTH_LONG);
+                                toast.show();
+                                break;
+                            case 4:
+                                mUsername.setError(errorM);
+                                break;
+                            case 5:
+                                mUsername.setError(errorM);
+                                break;
+                                default:
+                                    toast = Toast.makeText(mContext, errorM, Toast.LENGTH_LONG);
+                                    toast.show();
+                                    break;
+                        }
                     }
-                }, "join", mRoom.getText().toString(), mPassword.getText().toString(), mUsername.getText().toString(), popCheck+localCheck);
+                }, "join", tState, tCity, roomName, mPassword.getText().toString(), mUsername.getText().toString(), popCheck+localCheck);
                 showProgress(true);
                 appState.chatRoom.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }

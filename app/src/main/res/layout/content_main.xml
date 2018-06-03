@@ -25,7 +25,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Popular" />
+            android:text="Popular (0)" />
 
         <Button
             android:id="@+id/buttonLocal"
@@ -34,14 +34,22 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:elevation="0dp"
-            android:text="Local" />
+            android:text=" Local (0) " />
 
     </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar2"
+        style="@android:style/Widget.Material.Light.ProgressBar.Large"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:visibility="gone" />
 
     <ScrollView
         android:id="@+id/ListSpace"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_weight="1">
 
         <LinearLayout
@@ -65,5 +73,30 @@
 
         </LinearLayout>
     </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:contentDescription="GPS ICON"
+            android:padding="2dp"
+            android:scaleType="fitEnd"
+            app:srcCompat="@drawable/ic_dialog_map" />
+
+        <TextView
+            android:id="@+id/location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:text="Location"
+            android:textAlignment="textStart" />
+    </LinearLayout>
 
 </LinearLayout>

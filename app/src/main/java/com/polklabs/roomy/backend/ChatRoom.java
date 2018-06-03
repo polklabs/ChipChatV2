@@ -46,39 +46,42 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                     popular = init();
                     sock.close();
                 } catch (Exception e) {
-                    Log.d("Roomy", "Exception: " + e);
                     popular = "";
                 }
-                Log.d("Roomy", popular);
                 String[] split = popular.split("/");
                 if(split.length < 2){
                     split = new String[2];
                     if(popular.length() > 1) {
-                        split[0] = popular.substring(0, popular.length() - 2);
+                        split[0] = popular.substring(0, popular.length() - 1);
                     }else{
                         split[0] = "";
                     }
                     split[1]="";
                 }
+
+                try{
+                    Thread.sleep(1000);
+                }catch (Exception e){}
+
                 publishProgress(split[0]);
                 return split[1];
 
             case "join":
                 boolean joined = false;
 
-                if(paramArray.length > 4){
-                    options = paramArray[4];
+                if(paramArray.length > 6){
+                    options = paramArray[6];
                 }
 
                 try {
                     init();
-                    joined = join(paramArray[1], paramArray[2], paramArray[3]);
+                    joined = join(paramArray[3], paramArray[4], paramArray[5]);
                 } catch (Exception e) {
                     Log.d("Roomy", "Exception: " + e);
                 }
                 if (joined) {
                     publishProgress("DONE");
-                    Log.d("Roomy","Room: " + paramArray[1] + ", Password: " + paramArray[2] + ", Username: " + paramArray[3]);
+                    Log.d("Roomy","Room: " + paramArray[3] + ", Password: " + paramArray[4] + ", Username: " + paramArray[5]);
                 } else {
                     try{
                         sock.close();
@@ -134,6 +137,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     public boolean kicked = false;
 
     public String errorMessage = "";
+    public int errorType = 0;
 
     //***************************************************************************
     //* Private variables
@@ -189,9 +193,14 @@ public class ChatRoom extends AsyncTask<String, String, String> {
             roomString = roomString.trim();
             if(!isValid(roomString)){
                 errorMessage = "Invalid room name.";
+                errorType = 1;
                 return false;
             }
-            out.writeUTF(DE.encryptText(roomString));
+            if(options.charAt(1) == 'Y'){
+                out.writeUTF(DE.encryptText(paramArray[1]+paramArray[2]+":"+roomString));
+            }else {
+                out.writeUTF(DE.encryptText(roomString));
+            }
 
             //Create new room if needed
             boolean newRm = false;
@@ -219,12 +228,14 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                 if(!newRm){
                     if(DE.decryptText(in.readUTF()).equals("NACK")){
                         errorMessage = "Wrong password.";
+                        errorType = 2;
                         return false;
                     }
                 }
             }else if(passMessage.equals("NO")){
                 sock.close();
                 errorMessage = "Trying to enter local chat room.";
+                errorType = 3;
                 return false;
             }
             setupLevel++;
@@ -240,12 +251,14 @@ public class ChatRoom extends AsyncTask<String, String, String> {
             //Send username
             username = username.trim();
             if(isValid(username)){
-                if(usernames.contains(username) && !username.equals("")){
-                    errorMessage = "Username invalid/taken.";
+                if(usernames.contains(username)){
+                    errorMessage = "Username taken.";
+                    errorType = 4;
                     return false;
                 }
             }else{
                 errorMessage = "Username invalid.";
+                errorType = 5;
                 return false;
             }
             out.writeUTF(DE.encryptText(username));
@@ -289,6 +302,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
      */
     private String init() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException{
         errorMessage = "";
+        errorType = 0;
         setupLevel = 0;
 
         kicked = false;
@@ -310,6 +324,8 @@ public class ChatRoom extends AsyncTask<String, String, String> {
 
         users.add("Server");
         DE.addPublicKey("Server", serverPublicKey);
+
+        out.writeUTF(DE.encryptText(paramArray[1]+":"+paramArray[2]));
 
         String popularString = DE.decryptText(in.readUTF());
 
@@ -341,15 +357,17 @@ public class ChatRoom extends AsyncTask<String, String, String> {
         //Connect to server
         try{
             sock = new Socket(IP, PORT);
+            return;
         }catch(UnknownHostException e){
             //Should never happen
             Log.d("ChatRoom","::Unknown server host.");
-            System.exit(1);
         }catch(IOException e){
             //Happens if server is offline or under high load
             Log.d("ChatRoom", "::Could not connect to server.");
             Log.d("ChatRoom", "::Hit enter to retry connection.");
         }
+        errorMessage = "Server offline.";
+        errorType = 6;
     }
 
     /**
@@ -434,10 +452,10 @@ public class ChatRoom extends AsyncTask<String, String, String> {
             return false;
         }
 
-        String[] invalidChars = {";"," ", "/"};
+        String[] invalidChars = {";"," ", "/", ":", "\n", "\t"};
         for(String s : invalidChars){
             if(string.contains(s)){
-                System.out.println("::Can not contain \';\', \' \', or \'/\'");
+                //System.out.println("::Can not contain \';\', \' \', or \'/\'");
                 return false;
             }
         }

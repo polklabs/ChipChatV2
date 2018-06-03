@@ -1,7 +1,9 @@
 <resources>
     <string name="app_name">Roomy</string>
     <string name="action_settings">Settings</string>
-    <string name="no_chat_room">No Chat Rooms Available.</string>
+    <string name="no_pop_chat_room">No Popular Chat Rooms Available.</string>
+    <string name="no_loc_chat_room">No Local Chat Rooms Available.</string>
     <string name="users">Users: </string>
     <string name="title_activity_gallery">GalleryActivity</string>
+    <string name="title_activity_temp">Sign in</string>
 </resources>
