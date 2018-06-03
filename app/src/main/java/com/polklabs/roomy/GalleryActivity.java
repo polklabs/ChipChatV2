@@ -67,10 +67,10 @@ public class GalleryActivity extends AppCompatActivity {
                 Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 0);
         }
-        if(ContextCompat.checkSelfPermission(this,
+        /*if(ContextCompat.checkSelfPermission(this,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
-        }
+        }*/
 
         mLayout = findViewById(R.id.imageLayout);
         imagePath = findViewById(R.id.path);

@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
-        android:background="@drawable/toast_frame"
+        android:background="@drawable/sent_message"
         android:backgroundTint="@color/light_blue"
         android:padding="4dp"
         android:paddingEnd="6dp"

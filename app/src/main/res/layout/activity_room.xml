@@ -37,6 +37,13 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toLeftOf="parent">
 
+        <Button
+            android:id="@+id/addImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="addImage" />
+
         <EditText
             android:id="@+id/chatBox"
             android:layout_width="0dp"

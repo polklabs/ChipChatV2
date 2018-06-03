@@ -385,6 +385,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
         while(true){
             try{
                 message = DE.decryptText(in.readUTF());
+                Log.d("Roomy", message);
                 //Server updating keys
                 String[] split = message.split(":", 2);
                 if(split[0].equals("Server") && split.length > 1){
@@ -417,11 +418,10 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                         publishProgress("\r"+message);
                         //System.out.println("\r"+message);
                     }
+                }else if(split[1].length() >= 8 && split[1].substring(1, 8).equals("*image/")) {
+                    publishProgress("\r"+split[0]+":Image from "+split[0]);
                 }else{
-                    //onProgressUpdate
                     publishProgress("\r"+message);
-                    Log.d("ChatRoom", message);
-                    //System.out.println("\r"+message);
                 }
             }catch(IOException e){
                 publishProgress("::The connection has been closed.");

@@ -6,4 +6,6 @@
     <string name="users">Users: </string>
     <string name="title_activity_gallery">GalleryActivity</string>
     <string name="title_activity_temp">Sign in</string>
+    <string name="default_local"> Local (0) </string>
+    <string name="default_popular">Popular (0)</string>
 </resources>

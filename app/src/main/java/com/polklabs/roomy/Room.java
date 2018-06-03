@@ -1,6 +1,9 @@
 package com.polklabs.roomy;
 
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -22,6 +25,8 @@ import java.util.Calendar;
 import java.util.List;
 import java.text.SimpleDateFormat;
 
+import static com.polklabs.roomy.gallery.LoadImageTask.calculateInSampleSize;
+
 public class Room extends AppCompatActivity {
 
     Context mContext;
@@ -29,6 +34,7 @@ public class Room extends AppCompatActivity {
     RecyclerView mMessageList;
     EditText mEditText;
     Button mSendButton;
+    Button mAddImage;
 
     App appState;
 
@@ -51,6 +57,7 @@ public class Room extends AppCompatActivity {
         mMessageList = findViewById(R.id.messageList);
         mEditText = findViewById(R.id.chatBox);
         mSendButton = findViewById(R.id.sendMessage);
+        mAddImage = findViewById(R.id.addImage);
 
         mAdapter = new MessageAdapter(messageList);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
@@ -98,11 +105,20 @@ public class Room extends AppCompatActivity {
                     String date = df.format(Calendar.getInstance().getTime());
 
                     Message message = new Message(mEditText.getText().toString(), appState.chatRoom.username+"\t", date);
+                    message.setSentByMe();
                     messageList.add(message);
                     mAdapter.notifyDataSetChanged();
                     mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
                 }
                 mEditText.setText("");
+            }
+        });
+
+        mAddImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent1 = new Intent(mContext, GalleryActivity.class);
+                startActivityForResult(intent1, 12);
             }
         });
     }
@@ -111,5 +127,26 @@ public class Room extends AppCompatActivity {
     protected void onDestroy(){
         messageClient.stop = true;
         super.onDestroy();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == 12){
+            if(resultCode == RESULT_OK){
+                String bitmapPath = data.getStringExtra("path");
+                final BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inJustDecodeBounds = true;
+                BitmapFactory.decodeFile(bitmapPath, options);
+
+                //Adjust sample size
+                options.inSampleSize = calculateInSampleSize(options, GalleryActivity.size/5, GalleryActivity.size/5);
+
+                //Return sampled bitmap
+                options.inJustDecodeBounds = false;
+                messageClient.images.add(BitmapFactory.decodeFile(bitmapPath, options));
+            }
+        }else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
     }
 }

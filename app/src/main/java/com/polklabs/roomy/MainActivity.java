@@ -4,16 +4,24 @@ import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
+import android.nfc.FormatException;
+import android.nfc.NdefMessage;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -34,7 +42,6 @@ import android.widget.Toast;
 import com.polklabs.roomy.backend.ChatRoom;
 
 import java.io.IOException;
-import java.sql.Ref;
 import java.util.List;
 import java.util.Locale;
 
@@ -59,6 +66,9 @@ public class MainActivity extends AppCompatActivity {
 
     private String tState = "Unknown";
     private String tCity = "Unknown";
+
+    //NFC-------------------------------------------------------------------------------------------
+    private NfcAdapter mNfcAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,10 +142,13 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        //NFC----------------
+        initNFC();
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults){
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         Refresh();
     }
@@ -169,8 +182,8 @@ public class MainActivity extends AppCompatActivity {
         final float scale = mContext.getResources().getDisplayMetrics().density;
         mList.removeAllViews();
 
-        if(isPopular)mPopularButton.setText("Popular (0)");
-        else mLocalButton.setText(" Local (0) ");
+        if(isPopular)mPopularButton.setText(R.string.default_popular);
+        else mLocalButton.setText(R.string.default_local);
 
         if(text.equals("")){
             TextView none = new TextView(mContext);
@@ -192,8 +205,8 @@ public class MainActivity extends AppCompatActivity {
 
         String[] splitRooms = text.split(";");
 
-        if(isPopular)mPopularButton.setText("Popular ("+splitRooms.length+")");
-        else mLocalButton.setText("Local ("+splitRooms.length+")");
+        if(isPopular)mPopularButton.setText(("Popular ("+splitRooms.length+")"));
+        else mLocalButton.setText((" Local ("+splitRooms.length+") "));
 
         boolean odd = false;
         for(String room : splitRooms){
@@ -241,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
             imageLock.setScaleType(ImageView.ScaleType.FIT_END);
             imageLock.setLayoutParams(paramsImage);
 
-            textUsers.setText("Users: "+tempSplit[1]);
+            textUsers.setText(("Users: "+tempSplit[1]));
             textUsers.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
             textUsers.setLayoutParams(paramsText);
 
@@ -338,5 +351,78 @@ public class MainActivity extends AppCompatActivity {
                 mProgressBar.setVisibility(show ? View.VISIBLE : View.GONE);
             }
         });
+    }
+
+    //NFC-------------------------------------------
+    private void initNFC(){
+        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+    }
+
+    private void readFromNFC(Ndef ndef) {
+
+        try {
+            ndef.connect();
+            NdefMessage ndefMessage = ndef.getNdefMessage();
+            String message = new String(ndefMessage.getRecords()[0].getPayload());
+            //message = message.substring(3);
+            String[] parts = message.split(";");
+            String chatroom_name = parts[0];
+            String chatroom_password = parts[1];
+            String need_password = parts[2];
+            String set_local = parts[3];
+            chatroom_password = chatroom_password.replace("/", "");
+            Log.d("NFC", "Chatroom name: "+ chatroom_name);
+            Log.d("NFC", "Chatroom password: "+chatroom_password);
+            Log.d("NFC", "needs password: "+need_password);
+            Log.d("NFC", "Is local: "+set_local);
+            ndef.close();
+
+            Intent intent = new Intent(mContext, PreRoom.class);
+            intent.putExtra("name", chatroom_name);
+            intent.putExtra("pass", chatroom_password);
+            intent.putExtra("hasPass", Boolean.parseBoolean(need_password));
+            intent.putExtra("isLocal", Boolean.parseBoolean(set_local));
+
+            startActivity(intent);
+
+        } catch (IOException | FormatException e) {
+            e.printStackTrace();
+
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
+        IntentFilter ndefDetected = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
+        IntentFilter techDetected = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
+        IntentFilter[] nfcIntentFilter = new IntentFilter[]{techDetected,tagDetected,ndefDetected};
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        if(mNfcAdapter!= null)
+            mNfcAdapter.enableForegroundDispatch(this, pendingIntent, nfcIntentFilter, null);
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(mNfcAdapter!= null)
+            mNfcAdapter.disableForegroundDispatch(this);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent){
+        Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+
+        Log.d("NFC", "onNewIntent: "+intent.getAction());
+
+        if(tag != null) {
+            Toast.makeText(this, "Message detected.", Toast.LENGTH_SHORT).show();
+            Ndef ndef = Ndef.get(tag);
+            readFromNFC(ndef);
+        }
     }
 }

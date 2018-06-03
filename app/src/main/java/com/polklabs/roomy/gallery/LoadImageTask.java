@@ -65,7 +65,7 @@ public class LoadImageTask extends AsyncTask<String, Void, Bitmap> {
     //----------------------------------------------------------------------------------------------
 
     //Calculates the sample size to load images faster
-    private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight){
+    public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight){
         //Height and Width of input image
         final int height = options.outHeight;
         final int width = options.outWidth;

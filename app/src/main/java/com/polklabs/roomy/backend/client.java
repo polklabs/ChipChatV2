@@ -1,13 +1,19 @@
 package com.polklabs.roomy.backend;
 
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.util.Log;
+
+import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 public class client extends AsyncTask<String, String, String> {
     public ArrayList<String> messages = new ArrayList<>();
+    public ArrayList<Bitmap> images = new ArrayList<>();
+
     public boolean stop;
 
     private DataOutputStream out;
@@ -36,10 +42,24 @@ public class client extends AsyncTask<String, String, String> {
                 stop = false;
                 return "";
             }
-            if(messages.size() > 0){
-                Log.d("ChatRoom", "Sending message."+messages.get(0));
-                Message(messages.get(0));
+
+            while(messages.size() > 0){
+                String message = messages.get(0).replace("/", "/");
+                Message(message);
                 messages.remove(0);
+            }
+            while(images.size() > 0){
+                Bitmap bmp = images.get(0);
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                try {
+                    String message = "*image/" + new String(stream.toByteArray(), "UTF-8");
+                    Message(message);
+                }catch (UnsupportedEncodingException e){
+                    Log.d("Roomy", "Encoding Exception");
+                }
+                bmp.recycle();
+                images.remove(0);
             }
 
             try {
