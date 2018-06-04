@@ -4,6 +4,8 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import com.polklabs.roomy.gallery.LoadImageTask;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -87,10 +89,15 @@ public class client extends AsyncTask<String, String, String> {
                         //Check for command from user
                         if (text.equals("/close")) break;
                         if (text.charAt(0) == '/') {
-                            out.writeUTF(chatRoom.DE.encryptText(text, true));
+                            byte[] s = chatRoom.DE.encryptText(text, true).getBytes();
+                            out.writeInt(s.length);
+                            out.write(s);
+                            out.flush();
                         } else {
                             //Send message if message is not empty
-                            out.writeUTF(chatRoom.DE.encryptText(chatRoom.username + ": " + text));
+                            byte[] s = chatRoom.DE.encryptText(chatRoom.username + ": " + text).getBytes();
+                            out.writeInt(s.length);
+                            out.write(s);
                             out.flush();
                         }
                     }

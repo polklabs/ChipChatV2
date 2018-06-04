@@ -40,10 +40,11 @@
 
     <ProgressBar
         android:id="@+id/progressBar2"
-        style="@android:style/Widget.Material.Light.ProgressBar.Large"
+        style="@android:style/Widget.Holo.Light.ProgressBar.Large"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:padding="100dp"
         android:visibility="gone" />
 
     <ScrollView

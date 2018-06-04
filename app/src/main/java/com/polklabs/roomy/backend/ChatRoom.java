@@ -12,11 +12,15 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.concurrent.TimeUnit;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.util.TimeUtils;
 
 /**
  * Main class for chat room client. Sends user to chat room and sends messages.
@@ -41,6 +45,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     protected String doInBackground(String... params){
         switch (paramArray[0]) {
             case "init":
+                long startTime = System.currentTimeMillis();
                 String popular;
                 try {
                     popular = init();
@@ -59,10 +64,13 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                     split[1]="";
                 }
 
-                try{
-                    Thread.sleep(1000);
-                }catch (Exception e){}
-
+                long duration = (System.currentTimeMillis() - startTime);
+                if(duration < 1000) {
+                    try {
+                        Thread.sleep(1000 - duration);
+                    } catch (Exception e) {
+                    }
+                }
                 publishProgress(split[0]);
                 return split[1];
 
@@ -384,7 +392,12 @@ public class ChatRoom extends AsyncTask<String, String, String> {
 
         while(true){
             try{
-                message = DE.decryptText(in.readUTF());
+                int lengthData = in.readInt();
+                byte[] b = new byte[lengthData];
+                in.readFully(b);
+
+                message = DE.decryptText(new String(b, "UTF-8"));
+
                 Log.d("Roomy", message);
                 //Server updating keys
                 String[] split = message.split(":", 2);
