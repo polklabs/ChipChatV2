@@ -31,11 +31,8 @@ import android.widget.Toast;
 import com.polklabs.chipchat.backend.ChatRoom;
 
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -77,8 +74,6 @@ public class PreRoom extends AppCompatActivity {
         mLocation = findViewById(R.id.location);
 
         final App appState = ((App)getApplication());
-
-        JSONObject json = null;
 
         Intent intent = getIntent();
         if (intent != null) {
@@ -145,6 +140,9 @@ public class PreRoom extends AppCompatActivity {
         }
 
         mLocation.setText((tState+", "+tCity));
+        if(tState.equals("") || tCity.equals("")){
+            mLocation.setText(("Unknown, Unknown"));
+        }
 
         mJoin.setOnClickListener(new View.OnClickListener() {
             @Override

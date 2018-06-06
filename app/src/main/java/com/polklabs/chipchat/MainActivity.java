@@ -33,7 +33,6 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -48,7 +47,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -132,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
 
         locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 
-        Refresh();
+        //Refresh();
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -157,7 +155,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        Refresh();
+        if(ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
+            Refresh();
+        }
     }
 
     private void startConnect(View v){
@@ -178,7 +179,9 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra("isLocal", true);
             }
             startActivity(intent);
-        }catch (JSONException e){}
+        }catch (JSONException e){
+            Log.e("ChipChat", "JSON Error", e);
+        }
     }
 
     private void createList(JSONArray list, boolean isPopular){
@@ -229,60 +232,11 @@ public class MainActivity extends AppCompatActivity {
                 ((TextView)view.findViewById(R.id.textName)).setText(actualName);
                 ((TextView)view.findViewById(R.id.textUsers)).setText(("Users: " + list.getJSONObject(i).getInt("size")));
                 if(list.getJSONObject(i).getBoolean("lock")){
-                    ((ImageView)view.findViewById(R.id.imageLock)).setVisibility(View.VISIBLE);
+                    view.findViewById(R.id.imageLock).setVisibility(View.VISIBLE);
                 }
                 view.setOnClickListener(roomClick);
                 mList.addView(view);
 
-                /*
-                String actualName;
-                String contentDesc = list.getJSONObject(i).toString();
-                if (!isPopular) {
-                    actualName = (list.getJSONObject(i).getString("name").split(":")[1]);
-                } else {
-                    actualName = list.getJSONObject(i).getString("name");
-                }
-
-                int pixels = (int) (18 * scale + 0.5f);
-                LinearLayout.LayoutParams paramsText = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
-                LinearLayout.LayoutParams paramsImage = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, pixels, 1.0f);
-
-                //Setup Layout to hold text
-                LinearLayout newLayout = new LinearLayout(mContext);
-                newLayout.setHapticFeedbackEnabled(true);
-                newLayout.setOrientation(LinearLayout.HORIZONTAL);
-                newLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
-                newLayout.setContentDescription(contentDesc);
-                pixels = (int) (16 * scale + 0.5f);
-                newLayout.setPadding(pixels, pixels, pixels, pixels);
-                if (odd) {
-                    newLayout.setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_grey));
-                }
-                newLayout.setOnClickListener(roomClick);
-                mList.addView(newLayout);
-
-                TextView textName = new TextView(mContext);
-                ImageView imageLock = new ImageView(mContext);
-                TextView textUsers = new TextView(mContext);
-
-                textName.setText(actualName);
-                textName.setLayoutParams(paramsText);
-                textName.setTextSize(18);
-
-                if (list.getJSONObject(i).getBoolean("lock")) {
-                    imageLock.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.ic_lock_lock));
-                }
-                imageLock.setScaleType(ImageView.ScaleType.FIT_END);
-                imageLock.setLayoutParams(paramsImage);
-
-                textUsers.setText(("Users: " + list.getJSONObject(i).getInt("size")));
-                textUsers.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
-                textUsers.setLayoutParams(paramsText);
-
-                newLayout.addView(textName);
-                newLayout.addView(imageLock);
-                newLayout.addView(textUsers);
-                */
                 odd = !odd;
             }catch (JSONException e){
                 Log.d("ChipChat", e.toString());
@@ -331,6 +285,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         mLocation.setText((tState+", "+tCity));
+        if(tState.equals("") || tCity.equals("")){
+            mLocation.setText(("Unknown, Unknown"));
+        }
 
         appState.chatRoom = new ChatRoom(new ChatRoom.Listener() {
             @Override

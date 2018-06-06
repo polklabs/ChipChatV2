@@ -51,6 +51,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     }
     public          String username = "";                //Users username
     public          String password = "";
+    public          String name = "";
     public          Socket sock;                    //Socket to server
 
     //***************************************************************************
@@ -106,6 +107,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
 
             case "join":
                 this.password = paramArray[4];
+                this.name = paramArray[3];
                 boolean joined = false;
                 try {
                     joined = join();
@@ -207,7 +209,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
         obj.put("local", paramArray[6].equals("true"));
         obj.put("unlisted", paramArray[7].equals("true"));
 
-        connectToServer();
+        if(!connectToServer()) return false;
 
         out = new DataOutputStream(sock.getOutputStream());
         in = new DataInputStream(sock.getInputStream());
@@ -250,7 +252,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
      * @throws javax.crypto.BadPaddingException bad padding, data is the wrong number of bytes
      */
     private void init() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, JSONException {
-        connectToServer();
+        if(!connectToServer()) return;
 
         Log.d("ChipChat", "Connected to server.");
 
@@ -290,21 +292,21 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     /**
      * Attempts to connect to the server.
      */
-    private void connectToServer(){
+    private boolean connectToServer(){
         //Connect to server
         try{
             sock = new Socket();
             sock.connect(new InetSocketAddress(IP, PORT), 750);
-            return;
+            return true;
         }catch(UnknownHostException e){
             //Should never happen
             Log.d("ChipChat","::Unknown server host.");
         }catch(IOException e){
             //Happens if server is offline or under high load
             Log.d("ChipChat", "::Could not connect to server.");
-            Log.d("ChipChat", "::Hit enter to retry connection.");
         }
         errorType = 7;
+        return false;
     }
 
     /**

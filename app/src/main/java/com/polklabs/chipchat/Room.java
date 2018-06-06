@@ -127,6 +127,15 @@ public class Room extends AppCompatActivity
         messageClient = new client(appState.chatRoom);
         messageClient.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 
+        mEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if(hasFocus){
+                    mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
+                }
+            }
+        });
+
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -162,6 +171,16 @@ public class Room extends AppCompatActivity
         ((TextView)navigationView.getHeaderView(0).findViewById(R.id.usernameText)).setText("Username: \'"+appState.chatRoom.username+"\'");
         ((TextView)navigationView.getHeaderView(0).findViewById(R.id.locationText)).setText("Password: \'"+appState.chatRoom.password+"\'");
 
+        try {
+            getActionBar().setTitle("Chat Room: " + appState.chatRoom.name);
+        }catch(NullPointerException e){
+            Log.d("ChipChat", "Could not set title.");
+        }
+        try {
+            getSupportActionBar().setTitle("Chat Room: " + appState.chatRoom.name);
+        }catch(NullPointerException e){
+            Log.d("ChipChat", "Could not set title.");
+        }
     }
 
     private void setUserList(JSONArray list){
