@@ -1,4 +1,4 @@
-package com.polklabs.roomy.backend;
+package com.polklabs.chipchat.backend;
 
 public class Message {
     private String message, user, time;

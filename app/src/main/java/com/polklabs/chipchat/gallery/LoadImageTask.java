@@ -1,10 +1,10 @@
-package com.polklabs.roomy.gallery;
+package com.polklabs.chipchat.gallery;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 
-import com.polklabs.roomy.GalleryActivity;
+import com.polklabs.chipchat.GalleryActivity;
 
 //This AsyncTask allows images to be loaded away from the UI thread
 public class LoadImageTask extends AsyncTask<String, Void, Bitmap> {

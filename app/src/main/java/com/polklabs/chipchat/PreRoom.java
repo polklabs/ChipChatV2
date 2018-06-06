@@ -1,4 +1,4 @@
-package com.polklabs.roomy;
+package com.polklabs.chipchat;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -28,9 +28,14 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.polklabs.roomy.backend.ChatRoom;
+import com.polklabs.chipchat.backend.ChatRoom;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,8 +53,8 @@ public class PreRoom extends AppCompatActivity {
 
     String tRoom = "";
     String tPassword = "";
-    String tState = "Unknown";
-    String tCity = "Unknown";
+    String tState = "";
+    String tCity = "";
     boolean bPassword = true;
 
     Context mContext;
@@ -72,6 +77,8 @@ public class PreRoom extends AppCompatActivity {
         mLocation = findViewById(R.id.location);
 
         final App appState = ((App)getApplication());
+
+        JSONObject json = null;
 
         Intent intent = getIntent();
         if (intent != null) {
@@ -103,12 +110,12 @@ public class PreRoom extends AppCompatActivity {
             try {
                 getActionBar().setTitle("Join Room: " + tRoom);
             }catch(NullPointerException e){
-                Log.d("Roomy", "Could not set title.");
+                Log.d("ChipChat", "Could not set title.");
             }
             try {
                 getSupportActionBar().setTitle("Join Room: " + tRoom);
             }catch(NullPointerException e){
-                Log.d("Roomy", "Could not set title.");
+                Log.d("ChipChat", "Could not set title.");
             }
 
             mPassword.setCompletionHint("Password");
@@ -132,8 +139,8 @@ public class PreRoom extends AppCompatActivity {
                     tCity = addresses.get(0).getLocality();
                 }
             }catch(IOException e){
-                tCity = "Unknown";
-                tState = "Unknown";
+                tCity = "";
+                tState = "";
             }
         }
 
@@ -151,55 +158,58 @@ public class PreRoom extends AppCompatActivity {
 
                 String roomName = mRoom.getText().toString();
 
-                String localCheck = "N";
-                if(mLocal.isChecked() && !tCity.equals("Unknown") && !tState.equals("Unknown")) {
-                    localCheck = "Y";
+                String localCheck = "false";
+                if(mLocal.isChecked() && !tCity.equals("") && !tState.equals("")) {
+                    localCheck = "true";
                 }else{
-                    tCity = "Unknown";
-                    tState = "Unknown";
+                    tCity = "";
+                    tState = "";
                 }
-                String popCheck = "N";
-                if(mPopular.isChecked()) popCheck = "Y";
+                String popCheck = "false";
+                if(mPopular.isChecked()) popCheck = "true";
 
                 appState.chatRoom = new ChatRoom(new ChatRoom.Listener() {
                     @Override
-                    public void setText(String text) {
+                    public void setList(boolean popular, JSONArray list) { }
+                    @Override
+                    public void publishMessage(String sender, String body) { }
+                    @Override
+                    public void publishImage(String sender, String data) { }
+
+                    @Override
+                    public void publishText(String text) {
                         if(text.equals("DONE")){
-                            //Start next thing
                             Intent newIntent = new Intent(mContext, Room.class);
                             startActivityForResult(newIntent, 120);
                         }
                     }
 
                     @Override
-                    public void setText2(String text) {
+                    public void returnText(String text) {
                         //Called if error
                         showProgress(false);
-                        String errorM = appState.chatRoom.errorMessage;
                         switch(appState.chatRoom.errorType){
                             case 1:
-                                mRoom.setError(errorM);
+                                mRoom.setError(text);
                                 break;
                             case 2:
-                                mPassword.setError(errorM);
+                                mPassword.setError(text);
                                 break;
                             case 3:
-                                Toast toast = Toast.makeText(mContext, errorM, Toast.LENGTH_LONG);
-                                toast.show();
+                                Toast.makeText(mContext, text, Toast.LENGTH_LONG).show();
                                 break;
                             case 4:
-                                mUsername.setError(errorM);
+                                mUsername.setError(text);
                                 break;
                             case 5:
-                                mUsername.setError(errorM);
+                                mUsername.setError(text);
                                 break;
-                                default:
-                                    toast = Toast.makeText(mContext, errorM, Toast.LENGTH_LONG);
-                                    toast.show();
-                                    break;
+                            default:
+                                Toast.makeText(mContext, text, Toast.LENGTH_LONG).show();
+                                break;
                         }
                     }
-                }, "join", tState, tCity, roomName, mPassword.getText().toString(), mUsername.getText().toString(), popCheck+localCheck);
+                }, "join", tState, tCity, roomName, mPassword.getText().toString(), mUsername.getText().toString(), localCheck, popCheck);
                 showProgress(true);
                 appState.chatRoom.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }

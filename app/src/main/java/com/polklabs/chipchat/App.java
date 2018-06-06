@@ -1,8 +1,10 @@
-package com.polklabs.roomy;
+package com.polklabs.chipchat;
 
 import android.app.Application;
 import android.graphics.Bitmap;
-import com.polklabs.roomy.backend.ChatRoom;
+
+import com.polklabs.chipchat.backend.ChatRoom;
+
 import java.util.HashMap;
 import java.util.Map;
 

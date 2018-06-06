@@ -1,11 +1,10 @@
 <resources>
-    <string name="app_name">Roomy</string>
-    <string name="action_settings">Settings</string>
+    <string name="app_name">Chip Chat</string>
     <string name="no_pop_chat_room">No Popular Chat Rooms Available.</string>
     <string name="no_loc_chat_room">No Local Chat Rooms Available.</string>
     <string name="users">Users: </string>
-    <string name="title_activity_gallery">GalleryActivity</string>
-    <string name="title_activity_temp">Sign in</string>
+    <string name="title_activity_gallery">Choose an image</string>
+    <string name="title_activity_temp">Join</string>
     <string name="default_local"> Local (0) </string>
     <string name="default_popular">Popular (0)</string>
 </resources>

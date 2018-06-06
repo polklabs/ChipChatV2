@@ -1,8 +1,10 @@
-package com.polklabs.roomy.backend;
+package com.polklabs.chipchat.backend;
 
 //**
 // * For public private key gen and encryption
 // */
+import android.util.Log;
+
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -124,37 +126,25 @@ public final class dataEncrypt {
         userKeys.remove(username);
     }
 
-    /**Encrypts a byte array and return the String representation of them to be
-     * over TCP.
-     * Doubly encrypts the bytes to send for the server
-     * @param bytes the bytes to be encrypted
-     * @return The string of the encrypted bytes
-     * @throws InvalidKeyException .
-     * @throws IllegalBlockSizeException .
-     * @throws BadPaddingException .
-     */
-    public String encryptBytes(byte[] bytes)
-            throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-
-        return encrypt(encrypt(bytes, true).getBytes(), false);
-    }
-
     /**
      * @param msg string message
-     * @param forServer is it for the server
+     * @param key public key to use
+     * @param usePrivateKey is it for the server
      * @return .
      * @throws java.security.InvalidKeyException .
      * @throws javax.crypto.IllegalBlockSizeException .
      * @throws javax.crypto.BadPaddingException .
      */
-    public String encryptText(String msg, boolean forServer)
+    public String encryptOnce(String msg, String key, boolean usePrivateKey)
             throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
-        String one = encrypt(msg.getBytes(), true);
-        if(forServer){
-            one = (char)(0)+one;
-        }
-        return encrypt(one.getBytes(), false);
+        return encrypt(msg.getBytes(), userKeys.get(key), usePrivateKey);
+    }
+
+    public String encryptOnce(byte[] msg, String key, boolean usePrivateKey)
+            throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+
+        return encrypt(msg, userKeys.get(key), usePrivateKey);
     }
 
     /**Doubly encrypts a string of text to be sent to the server
@@ -164,26 +154,21 @@ public final class dataEncrypt {
      * @throws IllegalBlockSizeException .
      * @throws BadPaddingException .
      */
-    public String encryptText(String msg)
+    public String encryptText(String msg, String username)
             throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        return encryptText(msg, false);
+
+        return encrypt(encrypt(msg.getBytes(), null, true).getBytes(), userKeys.get(username),false);
     }
 
-    /**Decrypts a string twice, Once with the users private key. Then the first
-     * char in the partially decrypted string is the int value of the public key
-     * that should be used to decrypt the message fully.
-     * This will return an error if the correct public key does not exist in the
-     * public key dictionary.
-     * @param string The doubly encrypted string that the user received.
-     * @return the decrypted data in byte array format
-     * @throws InvalidKeyException .
-     * @throws IllegalBlockSizeException .
-     * @throws BadPaddingException .
-     */
-    public byte[] decryptBytes(String string)
+    public String decryptOnce(String msg, String key, boolean usePrivateKey)
+            throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
+        return new String(decrypt(msg, userKeys.get(key), usePrivateKey), "UTF-8");
+    }
+
+    public byte[] decryptOnceByte(String msg, String key, boolean usePrivateKey)
             throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
-        return decrypt(new String(decrypt(string, true)), false);
+        return decrypt(msg, userKeys.get(key), usePrivateKey);
     }
 
     /**Decrypts a string twice, Once with the users private key. Then the first
@@ -192,17 +177,18 @@ public final class dataEncrypt {
      * This will return an error if the correct public key does not exist in the
      * public key dictionary.
      * @param msg the doubly encrypted string that the user received.
+     * @param key the public key to use
      * @return the decrypted data in string format.
      * @throws InvalidKeyException .
      * @throws IllegalBlockSizeException .
      * @throws BadPaddingException .
      * @throws UnsupportedEncodingException .
      */
-    public String decryptText(String msg)
+    public String decryptText(String msg, String key)
             throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
 
-        String one = new String(decrypt(msg, true), "UTF-8");
-        return new String(decrypt(one, false), "UTF-8");
+        String one = new String(decrypt(msg, null, true), "UTF-8");
+        return new String(decrypt(one, userKeys.get(key),false), "UTF-8");
     }
 
     //***************************************************************************
@@ -217,63 +203,62 @@ public final class dataEncrypt {
     }
 
     //Basic encrypt function that can take in an arbritrary length
-    private String encrypt(byte[] bytes, boolean usePrivateKey) throws
+    private String encrypt(byte[] bytes, PublicKey key, boolean usePrivateKey) throws
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
         if(usePrivateKey){
             this.cipher.init(Cipher.ENCRYPT_MODE, this.privateKey);
         }else{
-            this.cipher.init(Cipher.ENCRYPT_MODE, this.userKeys.get("Server"));
+            this.cipher.init(Cipher.ENCRYPT_MODE, key);
         }
 
-        String result = "";
+        StringBuilder result = new StringBuilder("");
 
-        //Can only encrypt 117 bytes at a time
-        int start = 0, index = 116;
+        int SIZE = 53;
+        int start = 0, index = SIZE;
         while(true){
             //See if you only need to encrypt a smaller portion
-            if(bytes.length-start < 116)
+            if(bytes.length-start < SIZE)
                 index = bytes.length;
 
             //Get sub array of total message
             byte[] msg1 = Arrays.copyOfRange(bytes, start, index);
 
             //Encrypt the bytes
-            result += ApacheBase64.encodeBase64String(cipher.doFinal(msg1));
+            result.append(ApacheBase64.encodeBase64String(cipher.doFinal(msg1)));
 
             //increment and break when done
-            start += 116;
-            index += 116;
+            start += SIZE;
+            index += SIZE;
             if(start > bytes.length-1)
                 break;
         }
 
-        return result;
+        return result.toString();
     }
 
     //Basic decrypt function that can take in an arbitrary length and return bytes
-    private byte[] decrypt(String string, boolean usePrivateKey)
+    private byte[] decrypt(String string, PublicKey key, boolean usePrivateKey)
             throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
         if(usePrivateKey){
             this.cipher.init(Cipher.DECRYPT_MODE, this.privateKey);
         }else{
-            int value = string.charAt(0);
-            String username = parent.users.get(value);
-            this.cipher.init(Cipher.DECRYPT_MODE, this.userKeys.get(username));
-            string = string.substring(1);
+            this.cipher.init(Cipher.DECRYPT_MODE, key);
         }
 
         byte[] result = new byte[0];
 
-        int SIZE = 172;
+        int SIZE = 88;
         int start = 0, index = SIZE;
         while(true){
             if(string.length()-start <= SIZE)
                 index = string.length();
 
             String msg1 = string.substring(start, index);
-
+            Log.d("ChatRoom", msg1);
+            Log.d("ChatRoom", Integer.toString(msg1.length()));
+            Log.d("ChatRoom", Integer.toString(ApacheBase64.decodeBase64(msg1).length));
             //Encrypt the bytes
             byte[] temp2 = cipher.doFinal(ApacheBase64.decodeBase64(msg1));
             byte[] newResult = new byte[result.length + temp2.length];

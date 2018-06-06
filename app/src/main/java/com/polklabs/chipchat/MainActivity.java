@@ -1,4 +1,4 @@
-package com.polklabs.roomy;
+package com.polklabs.chipchat;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -39,9 +39,14 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.polklabs.roomy.backend.ChatRoom;
+import com.polklabs.chipchat.backend.ChatRoom;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -64,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
 
     private LocationManager locationManager;
 
-    private String tState = "Unknown";
-    private String tCity = "Unknown";
+    private String tState = "";
+    private String tCity = "";
 
     //NFC-------------------------------------------------------------------------------------------
     private NfcAdapter mNfcAdapter;
@@ -155,29 +160,28 @@ public class MainActivity extends AppCompatActivity {
 
     private void startConnect(View v){
         LinearLayout l = (LinearLayout) v;
+        try {
+            JSONObject roomObj = new JSONObject(l.getContentDescription().toString());
 
-        String[] tempSplit = l.getContentDescription().toString().split(" ");
+            String name = roomObj.getString("name");
+            if(name.contains(":")){
+                name = name.split(":", 2)[1];
+            }
 
-        Intent intent = new Intent(mContext, PreRoom.class);
-        intent.putExtra("name", tempSplit[0]);
-        intent.putExtra("pass", "");
-        boolean tempExtra = false;
-        if(tempSplit[2].equals("L")) tempExtra = true;
-        intent.putExtra("hasPass", tempExtra);
-        if(l.getParent() == mLocalList){
-            intent.putExtra("isLocal", true);
-        }
-        startActivity(intent);
-        //Start activity
+            Intent intent = new Intent(mContext, PreRoom.class);
+            intent.putExtra("name", name);
+            intent.putExtra("pass", "");
+            intent.putExtra("hasPass", roomObj.getBoolean("lock"));
+            if (l.getParent() == mLocalList) {
+                intent.putExtra("isLocal", true);
+            }
+            startActivity(intent);
+        }catch (JSONException e){}
     }
 
-    private void createList(String text, boolean isPopular){
-        Log.d(APP_NAME, "Create list: "+text);
-
+    private void createList(JSONArray list, boolean isPopular){
         LinearLayout mList = mPopularList;
-        if(!isPopular){
-            mList = mLocalList;
-        }
+        if(!isPopular) mList = mLocalList;
 
         final float scale = mContext.getResources().getDisplayMetrics().density;
         mList.removeAllViews();
@@ -185,13 +189,13 @@ public class MainActivity extends AppCompatActivity {
         if(isPopular)mPopularButton.setText(R.string.default_popular);
         else mLocalButton.setText(R.string.default_local);
 
-        if(text.equals("")){
+        if(list.length() <= 0){
             TextView none = new TextView(mContext);
 
             if(isPopular) none.setText(R.string.no_pop_chat_room);
             else none.setText(R.string.no_loc_chat_room);
 
-            if(appState.chatRoom.errorType == 6) {
+            if(appState.chatRoom.errorType == 7) {
                 none.setText("Could not connect to the server.\nPlease try again.");
                 none.setTextSize(24);
             }
@@ -203,66 +207,64 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        String[] splitRooms = text.split(";");
-
-        if(isPopular)mPopularButton.setText(("Popular ("+splitRooms.length+")"));
-        else mLocalButton.setText((" Local ("+splitRooms.length+") "));
+        if(isPopular)mPopularButton.setText(("Popular ("+list.length()+")"));
+        else mLocalButton.setText((" Local ("+list.length()+") "));
 
         boolean odd = false;
-        for(String room : splitRooms){
-            String[] tempSplit = room.split(" ");
+        for(int i = 0; i < list.length(); i++){
+            try {
+                String actualName;
+                String contentDesc = list.getJSONObject(i).toString();
+                if (!isPopular) {
+                    actualName = (list.getJSONObject(i).getString("name").split(":")[1]);
+                } else {
+                    actualName = list.getJSONObject(i).getString("name");
+                }
 
-            String actualName;
-            String contentDesc;
-            if(!isPopular) {
-                actualName = (tempSplit[0].split(":")[1]);
-                contentDesc = room.replace(tempSplit[0], actualName);
-            }else{
-                actualName = tempSplit[0];
-                contentDesc = room;
+                int pixels = (int) (18 * scale + 0.5f);
+                LinearLayout.LayoutParams paramsText = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+                LinearLayout.LayoutParams paramsImage = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, pixels, 1.0f);
+
+                //Setup Layout to hold text
+                LinearLayout newLayout = new LinearLayout(mContext);
+                newLayout.setHapticFeedbackEnabled(true);
+                newLayout.setOrientation(LinearLayout.HORIZONTAL);
+                newLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
+                newLayout.setContentDescription(contentDesc);
+                pixels = (int) (16 * scale + 0.5f);
+                newLayout.setPadding(pixels, pixels, pixels, pixels);
+                if (odd) {
+                    newLayout.setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_grey));
+                }
+                newLayout.setOnClickListener(roomClick);
+                mList.addView(newLayout);
+
+                TextView textName = new TextView(mContext);
+                ImageView imageLock = new ImageView(mContext);
+                TextView textUsers = new TextView(mContext);
+
+                textName.setText(actualName);
+                textName.setLayoutParams(paramsText);
+                textName.setTextSize(18);
+
+                if (list.getJSONObject(i).getBoolean("lock")) {
+                    imageLock.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.ic_lock_lock));
+                }
+                imageLock.setScaleType(ImageView.ScaleType.FIT_END);
+                imageLock.setLayoutParams(paramsImage);
+
+                textUsers.setText(("Users: " + list.getJSONObject(i).getInt("size")));
+                textUsers.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+                textUsers.setLayoutParams(paramsText);
+
+                newLayout.addView(textName);
+                newLayout.addView(imageLock);
+                newLayout.addView(textUsers);
+
+                odd = !odd;
+            }catch (JSONException e){
+                Log.d("ChipChat", e.toString());
             }
-
-            int pixels = (int)(18*scale+0.5f);
-            LinearLayout.LayoutParams paramsText = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
-            LinearLayout.LayoutParams paramsImage = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, pixels, 1.0f);
-
-            //Setup Layout to hold text
-            LinearLayout newLayout = new LinearLayout(mContext);
-            newLayout.setHapticFeedbackEnabled(true);
-            newLayout.setOrientation(LinearLayout.HORIZONTAL);
-            newLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
-            newLayout.setContentDescription(contentDesc);
-            pixels = (int)(16*scale+0.5f);
-            newLayout.setPadding(pixels,pixels,pixels,pixels);
-            if(odd){
-                newLayout.setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_grey));
-            }
-            newLayout.setOnClickListener(roomClick);
-            mList.addView(newLayout);
-
-            TextView textName = new TextView(mContext);
-            ImageView imageLock = new ImageView(mContext);
-            TextView textUsers = new TextView(mContext);
-
-            textName.setText(actualName);
-            textName.setLayoutParams(paramsText);
-            textName.setTextSize(18);
-
-            if(tempSplit[2].equals("L")) {
-                imageLock.setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.ic_lock_lock));
-            }
-            imageLock.setScaleType(ImageView.ScaleType.FIT_END);
-            imageLock.setLayoutParams(paramsImage);
-
-            textUsers.setText(("Users: "+tempSplit[1]));
-            textUsers.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
-            textUsers.setLayoutParams(paramsText);
-
-            newLayout.addView(textName);
-            newLayout.addView(imageLock);
-            newLayout.addView(textUsers);
-
-            odd = !odd;
         }
     }
 
@@ -302,8 +304,8 @@ public class MainActivity extends AppCompatActivity {
                     tCity = addresses.get(0).getLocality();
                 }
             }catch(IOException e){
-                tCity = "Unknown";
-                tState = "Unknown";
+                tCity = "";
+                tState = "";
             }
         }
 
@@ -311,14 +313,26 @@ public class MainActivity extends AppCompatActivity {
 
         appState.chatRoom = new ChatRoom(new ChatRoom.Listener() {
             @Override
-            public void setText(String text) {
-                createList(text, true);
-            }
+            public void publishText(String text) { }
             @Override
-            public void setText2(String text){
-                createList(text, false);
+            public void returnText(String text){
+                if(!text.equals("")) {
+                    Toast.makeText(mContext, text, Toast.LENGTH_SHORT).show();
+                    createList(new JSONArray(), true);
+                    createList(new JSONArray(), false);
+                }
                 showProgress(false);
             }
+
+            @Override
+            public void setList(boolean popular, JSONArray list) {
+                createList(list, popular);
+                //showProgress(false);
+            }
+            @Override
+            public void publishMessage(String sender, String body) { }
+            @Override
+            public void publishImage(String sender, String data) { }
         }, "init", tState, tCity);
         appState.chatRoom.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         Log.d(APP_NAME, "Refresh");

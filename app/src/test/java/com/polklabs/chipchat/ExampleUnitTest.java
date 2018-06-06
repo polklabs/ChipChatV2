@@ -1,4 +1,4 @@
-package com.polklabs.roomy;
+package com.polklabs.chipchat;
 
 import org.junit.Test;
 

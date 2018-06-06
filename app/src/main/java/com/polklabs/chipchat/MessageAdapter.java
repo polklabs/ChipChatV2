@@ -1,4 +1,4 @@
-package com.polklabs.roomy;
+package com.polklabs.chipchat;
 
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.polklabs.roomy.backend.Message;
+import com.polklabs.chipchat.backend.Message;
 
 import java.util.List;
 

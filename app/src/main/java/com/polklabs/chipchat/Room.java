@@ -1,12 +1,11 @@
-package com.polklabs.roomy;
+package com.polklabs.chipchat;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -14,20 +13,22 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.text.format.DateFormat;
 
-import com.polklabs.roomy.backend.ChatRoom;
-import com.polklabs.roomy.backend.Message;
-import com.polklabs.roomy.backend.client;
+import com.polklabs.chipchat.backend.ChatRoom;
+import com.polklabs.chipchat.backend.Message;
+import com.polklabs.chipchat.backend.client;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.text.SimpleDateFormat;
 
-import static com.polklabs.roomy.gallery.LoadImageTask.calculateInSampleSize;
+import static com.polklabs.chipchat.gallery.LoadImageTask.calculateInSampleSize;
 
-public class Room extends AppCompatActivity {
+public class Room extends AppCompatActivity{
 
     Context mContext;
 
@@ -67,21 +68,36 @@ public class Room extends AppCompatActivity {
 
         appState.chatRoom.setListener(new ChatRoom.Listener() {
             @Override
-            public void setText(String text) {
-                int splitLoc = text.indexOf(':');
+            public void publishText(String text) { }
 
+            @Override
+            public void returnText(String text) {
+                //On close
+            }
+
+            @Override
+            public void setList(boolean popular, JSONArray list) { }
+
+            @Override
+            public void publishMessage(String sender, String body) {
                 SimpleDateFormat df = new SimpleDateFormat("HH:mm");
                 String date = df.format(Calendar.getInstance().getTime());
 
-                Message message = new Message(text.substring(splitLoc+1), text.substring(0, splitLoc)+"\t", date);
+                Message message = new Message(body, sender+"\t", date);
                 messageList.add(message);
                 mAdapter.notifyDataSetChanged();
                 mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
             }
 
             @Override
-            public void setText2(String text) {
-                //On close
+            public void publishImage(String sender, String data) {
+                SimpleDateFormat df = new SimpleDateFormat("HH:mm");
+                String date = df.format(Calendar.getInstance().getTime());
+
+                Message message = new Message(data, sender+"\t", date);
+                messageList.add(message);
+                mAdapter.notifyDataSetChanged();
+                mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
             }
         });
 
@@ -144,6 +160,15 @@ public class Room extends AppCompatActivity {
                 //Return sampled bitmap
                 options.inJustDecodeBounds = false;
                 messageClient.images.add(BitmapFactory.decodeFile(bitmapPath, options));
+
+                SimpleDateFormat df = new SimpleDateFormat("HH:mm");
+                String date = df.format(Calendar.getInstance().getTime());
+
+                Message message = new Message("Sent image: "+bitmapPath, appState.chatRoom.username+"\t", date);
+                message.setSentByMe();
+                messageList.add(message);
+                mAdapter.notifyDataSetChanged();
+                mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
             }
         }else {
             super.onActivityResult(requestCode, resultCode, data);

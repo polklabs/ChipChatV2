@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 27
     defaultConfig {
-        applicationId "com.polklabs.roomy"
+        applicationId "com.polklabs.chipchat"
         minSdkVersion 26
         targetSdkVersion 27
         versionCode 1
@@ -16,8 +16,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    productFlavors {
-    }
+    buildToolsVersion '27.0.3'
 }
 
 dependencies {
