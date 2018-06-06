@@ -28,6 +28,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,6 +36,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -159,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startConnect(View v){
-        LinearLayout l = (LinearLayout) v;
+        RelativeLayout l = (RelativeLayout) v;
         try {
             JSONObject roomObj = new JSONObject(l.getContentDescription().toString());
 
@@ -213,6 +215,26 @@ public class MainActivity extends AppCompatActivity {
         boolean odd = false;
         for(int i = 0; i < list.length(); i++){
             try {
+                View view = LayoutInflater.from(mContext).inflate(R.layout.room_list_row, mList, false);
+
+                String actualName;
+                String contentDesc = list.getJSONObject(i).toString();
+                if (!isPopular) {
+                    actualName = (list.getJSONObject(i).getString("name").split(":")[1]);
+                } else {
+                    actualName = list.getJSONObject(i).getString("name");
+                }
+
+                view.findViewById(R.id.frame).setContentDescription(contentDesc);
+                ((TextView)view.findViewById(R.id.textName)).setText(actualName);
+                ((TextView)view.findViewById(R.id.textUsers)).setText(("Users: " + list.getJSONObject(i).getInt("size")));
+                if(list.getJSONObject(i).getBoolean("lock")){
+                    ((ImageView)view.findViewById(R.id.imageLock)).setVisibility(View.VISIBLE);
+                }
+                view.setOnClickListener(roomClick);
+                mList.addView(view);
+
+                /*
                 String actualName;
                 String contentDesc = list.getJSONObject(i).toString();
                 if (!isPopular) {
@@ -260,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
                 newLayout.addView(textName);
                 newLayout.addView(imageLock);
                 newLayout.addView(textUsers);
-
+                */
                 odd = !odd;
             }catch (JSONException e){
                 Log.d("ChipChat", e.toString());
@@ -286,7 +308,6 @@ public class MainActivity extends AppCompatActivity {
             Refresh();
             return true;
         }        //noinspection SimplifiableIfStatement
-
 
         return super.onOptionsItemSelected(item);
     }
@@ -317,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void returnText(String text){
                 if(!text.equals("")) {
-                    Toast.makeText(mContext, text, Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(mContext, text, Toast.LENGTH_SHORT).show();
                     createList(new JSONArray(), true);
                     createList(new JSONArray(), false);
                 }
@@ -327,7 +348,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void setList(boolean popular, JSONArray list) {
                 createList(list, popular);
-                //showProgress(false);
             }
             @Override
             public void publishMessage(String sender, String body) { }
@@ -408,6 +428,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        Refresh();
         IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
         IntentFilter ndefDetected = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
         IntentFilter techDetected = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);

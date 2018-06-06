@@ -85,7 +85,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:hint="Password (Optional)"
+                    android:hint="Password"
                     android:importantForAutofill="no"
                     android:inputType="text"
                     android:maxLength="30"

@@ -1,25 +1,36 @@
 package com.polklabs.chipchat;
 
+import android.os.Bundle;
+import android.util.Log;
+import android.view.SubMenu;
+import android.view.View;
+import android.support.design.widget.NavigationView;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.polklabs.chipchat.backend.ChatRoom;
 import com.polklabs.chipchat.backend.Message;
 import com.polklabs.chipchat.backend.client;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
+import org.json.JSONException;
+import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,7 +39,8 @@ import java.util.List;
 
 import static com.polklabs.chipchat.gallery.LoadImageTask.calculateInSampleSize;
 
-public class Room extends AppCompatActivity{
+public class Room extends AppCompatActivity
+        implements NavigationView.OnNavigationItemSelectedListener {
 
     Context mContext;
 
@@ -43,23 +55,34 @@ public class Room extends AppCompatActivity{
     private MessageAdapter mAdapter;
 
     private client messageClient;
-
+    private DrawerLayout drawer;
+    private NavigationView navigationView;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room);
 
-        appState = (App)getApplication();
+        //Setup toolbar ----------------------------------------------------------------------------
+        drawer = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+        try { getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }catch (NullPointerException e){}
+        try { getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }catch (NullPointerException e){}
 
+        //App references ---------------------------------------------------------------------------
+        appState = (App)getApplication();
         mContext = getApplicationContext();
 
-        setResult(RESULT_OK);
-
+        //Get items from view ----------------------------------------------------------------------
         mMessageList = findViewById(R.id.messageList);
         mEditText = findViewById(R.id.chatBox);
         mSendButton = findViewById(R.id.sendMessage);
         mAddImage = findViewById(R.id.addImage);
-
         mAdapter = new MessageAdapter(messageList);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         mMessageList.setLayoutManager(mLayoutManager);
@@ -69,14 +92,12 @@ public class Room extends AppCompatActivity{
         appState.chatRoom.setListener(new ChatRoom.Listener() {
             @Override
             public void publishText(String text) { }
-
             @Override
-            public void returnText(String text) {
-                //On close
+            public void returnText(String text) { }
+            @Override
+            public void setList(boolean popular, JSONArray list) {
+                setUserList(list);
             }
-
-            @Override
-            public void setList(boolean popular, JSONArray list) { }
 
             @Override
             public void publishMessage(String sender, String body) {
@@ -137,6 +158,27 @@ public class Room extends AppCompatActivity{
                 startActivityForResult(intent1, 12);
             }
         });
+
+        ((TextView)navigationView.getHeaderView(0).findViewById(R.id.usernameText)).setText("Username: \'"+appState.chatRoom.username+"\'");
+        ((TextView)navigationView.getHeaderView(0).findViewById(R.id.locationText)).setText("Password: \'"+appState.chatRoom.password+"\'");
+
+    }
+
+    private void setUserList(JSONArray list){
+        Log.d("ChipChat", "Setting Userlist");
+        final Menu menu = navigationView.getMenu();
+        menu.clear();
+        SubMenu sub1 = menu.addSubMenu("Report/Kick Users");
+        for(int i = 1; i < list.length(); i++){
+            try {
+                MenuItem temp = sub1.add(list.getString(i));
+                if(i == 1){
+                    temp.setIcon(R.drawable.shield2);
+                }
+            }catch(JSONException e){}
+        }
+        SubMenu sub = menu.addSubMenu("Settings");
+        sub.add(0, R.id.writeNFC, 0, "Write to NFC");
     }
 
     @Override
@@ -145,6 +187,7 @@ public class Room extends AppCompatActivity{
         super.onDestroy();
     }
 
+    //Result from choose image ---------------------------------------------------------------------
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if(requestCode == 12){
@@ -173,5 +216,55 @@ public class Room extends AppCompatActivity{
         }else {
             super.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.END)) {
+            drawer.closeDrawer(GravityCompat.END);
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.room, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.sideBar) {
+            if(drawer.isDrawerOpen(GravityCompat.END)) {
+                drawer.closeDrawer(GravityCompat.END);
+            }else{
+                drawer.openDrawer(GravityCompat.END);
+            }
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+
+        if(id == R.id.writeNFC){
+            Toast.makeText(mContext, "Writing NFC...", Toast.LENGTH_SHORT).show();
+        }else{
+            messageClient.commands.add("kick "+item.getTitle());
+        }
+
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.END);
+        return true;
     }
 }

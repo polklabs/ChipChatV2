@@ -180,7 +180,8 @@ public class PreRoom extends AppCompatActivity {
                     public void publishText(String text) {
                         if(text.equals("DONE")){
                             Intent newIntent = new Intent(mContext, Room.class);
-                            startActivityForResult(newIntent, 120);
+                            startActivity(newIntent);
+                            finish();
                         }
                     }
 
@@ -243,14 +244,5 @@ public class PreRoom extends AppCompatActivity {
                 mProgressbar.setVisibility(show ? View.VISIBLE : View.GONE);
             }
         });
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if(requestCode == 120){
-            finish();
-        }else {
-            super.onActivityResult(requestCode, resultCode, data);
-        }
     }
 }

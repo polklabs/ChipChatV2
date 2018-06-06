@@ -7,11 +7,9 @@ import java.net.*;
 import java.io.*;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Map;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -38,10 +36,10 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     public dataEncrypt DE;
     /**List of the users the client knows are in the chat room*/
     public ArrayList<String> users = new ArrayList<>();
+    private JSONArray userList;
     /**Connection has been closed, start a new one*/
     public boolean closed = false;
     public boolean kicked = false;
-    public String[] errorMessage = {"", "Invalid Room Name", "Wrong Password", "Cannot Enter Local Chat Room", "Username Taken", "Username Invalid", "Room Is Full", "Could not connect to the server."};
     public int errorType = 0;
     public boolean loadedRoom = false;
     public interface Listener{
@@ -51,7 +49,8 @@ public class ChatRoom extends AsyncTask<String, String, String> {
         void publishMessage(String sender, String body);
         void publishImage(String sender, String  data);
     }
-    public          String username;                //Users username
+    public          String username = "";                //Users username
+    public          String password = "";
     public          Socket sock;                    //Socket to server
 
     //***************************************************************************
@@ -67,6 +66,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     private String[] paramArray;
     private JSONArray popularList;
     private JSONArray localList;
+    private String[] errorMessage = {"", "Invalid Room Name", "Wrong Password", "Cannot Enter Local Chat Room", "Username Taken", "Username Invalid", "Room Is Full", "Could not connect to the server."};
 
     //***************************************************************************
     //* Constructor
@@ -105,6 +105,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                 return errorMessage[errorType];
 
             case "join":
+                this.password = paramArray[4];
                 boolean joined = false;
                 try {
                     joined = join();
@@ -161,6 +162,9 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                 break;
             case "image":
                 listener.publishImage(values[1], values[2]);
+                break;
+            case "users":
+                listener.setList(false, userList);
                 break;
         }
     }
@@ -289,7 +293,8 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     private void connectToServer(){
         //Connect to server
         try{
-            sock = new Socket(IP, PORT);
+            sock = new Socket();
+            sock.connect(new InetSocketAddress(IP, PORT), 750);
             return;
         }catch(UnknownHostException e){
             //Should never happen
@@ -335,9 +340,9 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                         break;
                     case "keys":
                         users.clear();
-                        JSONArray tmp = message.getJSONArray("users");
-                        for(int i = 0; i < tmp.length(); i++){
-                            users.add(tmp.getString(i));
+                        userList = message.getJSONArray("users");
+                        for(int i = 0; i < userList.length(); i++){
+                            users.add(userList.getString(i));
                         }
                         DE.userKeys.clear();
                         JSONObject tmp2 = message.getJSONObject("keys");
@@ -347,6 +352,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                             String pubKey = tmp2.getString(s);
                             DE.userKeys.put(s, dataEncrypt.stringToPublicKey(pubKey));
                         }
+                        publishProgress("users");
                         break;
                     default:
                         Log.d("ChatRoom", "Message: "+message.getString("type"));
@@ -356,7 +362,9 @@ public class ChatRoom extends AsyncTask<String, String, String> {
             }catch(IOException e){
                 publishProgress("Server", "::The connection has been closed.");
                 break;
-            }catch(JSONException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException e){}
+            }catch(JSONException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException | NoSuchAlgorithmException | InvalidKeySpecException e){
+                Log.d("ChipChat", "Could not receive a message.");
+            }
         }
     }
 

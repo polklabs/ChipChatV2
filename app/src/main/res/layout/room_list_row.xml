@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/frame"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clickable="true"
+    android:hapticFeedbackEnabled="true"
+    android:padding="18dp">
+
+    <ImageView
+        android:id="@+id/imageLock"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:scaleType="fitStart"
+        android:visibility="visible"
+        app:srcCompat="@drawable/ic_lock_lock" />
+
+    <TextView
+        android:id="@+id/textName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/imageLock"
+        android:text="TextView"
+        android:textAlignment="textStart"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textUsers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:text="TextView"
+        android:textAlignment="viewEnd" />
+</RelativeLayout>

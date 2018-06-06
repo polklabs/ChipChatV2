@@ -50,7 +50,7 @@ public class GalleryActivity  extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gallery);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -129,8 +129,6 @@ public class GalleryActivity  extends AppCompatActivity{
         File[] list = root.listFiles();
 
         if(list == null) return;
-
-        //Log.d("File", String.format("%d", list.length));
 
         for(File file : list){
             if(file.isDirectory()) {

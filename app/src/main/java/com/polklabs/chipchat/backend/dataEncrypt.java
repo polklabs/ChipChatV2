@@ -256,9 +256,7 @@ public final class dataEncrypt {
                 index = string.length();
 
             String msg1 = string.substring(start, index);
-            Log.d("ChatRoom", msg1);
-            Log.d("ChatRoom", Integer.toString(msg1.length()));
-            Log.d("ChatRoom", Integer.toString(ApacheBase64.decodeBase64(msg1).length));
+
             //Encrypt the bytes
             byte[] temp2 = cipher.doFinal(ApacheBase64.decodeBase64(msg1));
             byte[] newResult = new byte[result.length + temp2.length];
