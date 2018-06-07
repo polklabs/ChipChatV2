@@ -17,6 +17,7 @@ import javax.crypto.IllegalBlockSizeException;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import org.apache.commons.codec.binary.ApacheBase64;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -329,7 +330,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                         if(inner.getString("type").equals("text")){
                             publishProgress( "text", inner.getString("sender"), DE.decryptOnce(inner.getString("body"), inner.getString("sender"), false));
                         }else if(inner.getString("type").equals("image")){
-                            publishProgress("image", inner.getString("sender"), "Image from "+inner.getString("sender")+" is "+inner.getString("body").length()+" bytes.");
+                            publishProgress("image", inner.getString("sender"), DE.decryptOnce(inner.getString("body"), inner.getString("sender"), false));
                         }
                         break;
                     case "command":

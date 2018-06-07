@@ -1,6 +1,11 @@
 package com.polklabs.chipchat;
 
+import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.util.Base64;
 import android.util.Log;
 import android.view.SubMenu;
 import android.view.View;
@@ -28,6 +33,7 @@ import com.polklabs.chipchat.backend.ChatRoom;
 import com.polklabs.chipchat.backend.Message;
 import com.polklabs.chipchat.backend.client;
 
+import org.apache.commons.codec.binary.ApacheBase64;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.w3c.dom.Text;
@@ -104,21 +110,43 @@ public class Room extends AppCompatActivity
                 SimpleDateFormat df = new SimpleDateFormat("HH:mm");
                 String date = df.format(Calendar.getInstance().getTime());
 
-                Message message = new Message(body, sender+"\t", date);
+                Message message = new Message(body, "\t"+sender+"\t", date);
                 messageList.add(message);
                 mAdapter.notifyDataSetChanged();
                 mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
+                Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (Build.VERSION.SDK_INT >= 26) {
+                    ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect
+                            .createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE));
+                }
+                else{
+                    long[] pattern = {0, 100, 50, 100};
+                    v.vibrate(pattern, -1);
+                }
             }
 
             @Override
             public void publishImage(String sender, String data) {
+                byte[] bitData = Base64.decode(data, Base64.DEFAULT);
                 SimpleDateFormat df = new SimpleDateFormat("HH:mm");
                 String date = df.format(Calendar.getInstance().getTime());
 
-                Message message = new Message(data, sender+"\t", date);
+                Message message = new Message(data, "\t"+sender+"\t", date);
+                message.setIsImage();
+                Bitmap bitmap = BitmapFactory.decodeByteArray(bitData, 0, bitData.length);
+                message.setImage(bitmap);
                 messageList.add(message);
                 mAdapter.notifyDataSetChanged();
                 mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
+                Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+                if (Build.VERSION.SDK_INT >= 26) {
+                    ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect
+                            .createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE));
+                }
+                else{
+                    long[] pattern = {0, 100, 50, 100};
+                    v.vibrate(pattern, -1);
+                }
             }
         });
 
@@ -221,13 +249,16 @@ public class Room extends AppCompatActivity
 
                 //Return sampled bitmap
                 options.inJustDecodeBounds = false;
-                messageClient.images.add(BitmapFactory.decodeFile(bitmapPath, options));
+                Bitmap image = BitmapFactory.decodeFile(bitmapPath, options);
+                messageClient.images.add(image);
 
                 SimpleDateFormat df = new SimpleDateFormat("HH:mm");
                 String date = df.format(Calendar.getInstance().getTime());
 
-                Message message = new Message("Sent image: "+bitmapPath, appState.chatRoom.username+"\t", date);
+                Message message = new Message("Sent image: "+bitmapPath, appState.chatRoom.username+"\t", date+"\t");
                 message.setSentByMe();
+                message.setIsImage();
+                message.setImage(image);
                 messageList.add(message);
                 mAdapter.notifyDataSetChanged();
                 mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);

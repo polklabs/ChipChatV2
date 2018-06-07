@@ -2,8 +2,10 @@ package com.polklabs.chipchat.backend;
 
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
+import android.util.Base64;
 import android.util.Log;
 
+import org.apache.commons.codec.binary.ApacheBase64;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -50,8 +52,8 @@ public class client extends AsyncTask<String, String, String> {
                 Bitmap bmp = images.get(0);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 bmp.compress(Bitmap.CompressFormat.PNG, 100, stream);
-                Image(stream.toByteArray());
-                bmp.recycle();
+                byte[] b = stream.toByteArray();
+                Image(Base64.encodeToString(b, Base64.DEFAULT));
                 images.remove(0);
             }
             while(commands.size() > 0){
@@ -108,14 +110,14 @@ public class client extends AsyncTask<String, String, String> {
         }
     }
 
-    private void Image(byte[] data){
+    private void Image(String data){
         try {
             while (!chatRoom.closed) {
                 try {
                     if (chatRoom.kicked)
                         break;
 
-                    if (data.length > 0) {
+                    if (data.length() > 0) {
                         JSONObject messageFinal = new JSONObject();
                         messageFinal.put("type", "data");
                         messageFinal.put("messages", chatRoom.DE.encryptOnce(data, null, true));

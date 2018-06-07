@@ -212,7 +212,7 @@ public final class dataEncrypt {
             this.cipher.init(Cipher.ENCRYPT_MODE, key);
         }
 
-        StringBuilder result = new StringBuilder("");
+        String result = "";
 
         int SIZE = 53;
         int start = 0, index = SIZE;
@@ -225,7 +225,7 @@ public final class dataEncrypt {
             byte[] msg1 = Arrays.copyOfRange(bytes, start, index);
 
             //Encrypt the bytes
-            result.append(ApacheBase64.encodeBase64String(cipher.doFinal(msg1)));
+            result += (ApacheBase64.encodeBase64String(cipher.doFinal(msg1)));
 
             //increment and break when done
             start += SIZE;
@@ -234,7 +234,7 @@ public final class dataEncrypt {
                 break;
         }
 
-        return result.toString();
+        return result;
     }
 
     //Basic decrypt function that can take in an arbitrary length and return bytes

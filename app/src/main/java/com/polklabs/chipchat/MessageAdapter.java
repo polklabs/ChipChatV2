@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.polklabs.chipchat.backend.Message;
@@ -16,6 +17,8 @@ public class MessageAdapter extends RecyclerView.Adapter {
     private static final int VIEW_TYPE_SERVER = 0;
     private static final int VIEW_TYPE_MESSAGE_SENT = 1;
     private static final int VIEW_TYPE_MESSAGE_RECEIVED = 2;
+    private static final int VIEW_TYPE_IMAGE_SENT = 3;
+    private static final int VIEW_TYPE_IMAGE_RECEIVED = 4;
     //private String Server;
 
 
@@ -54,6 +57,8 @@ public class MessageAdapter extends RecyclerView.Adapter {
         Log.d("Roomy", message.getUser());
         Log.d("Roomy", String.valueOf( message.getUser().equals(messageList.get(0).getUser())));
         if(message.isSentByMe()){
+            if(message.isImage())
+                return VIEW_TYPE_IMAGE_SENT;
             return VIEW_TYPE_MESSAGE_SENT;
         }
         else if(message.getUser().equals( messageList.get(0).getUser()))
@@ -61,6 +66,8 @@ public class MessageAdapter extends RecyclerView.Adapter {
             return VIEW_TYPE_SERVER;
         }
         else{
+            if(message.isImage())
+                return VIEW_TYPE_IMAGE_RECEIVED;
             return VIEW_TYPE_MESSAGE_RECEIVED;
         }
     }
@@ -88,6 +95,19 @@ public class MessageAdapter extends RecyclerView.Adapter {
                     .inflate(R.layout.server_message, parent, false);
             return new ServerMessageHolder(view);
         }
+        else if(viewType == VIEW_TYPE_IMAGE_SENT)
+        {
+            view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.image_list_row_2, parent, false);
+            return new SentImageHolder(view);
+        }
+        else if(viewType == VIEW_TYPE_IMAGE_RECEIVED)
+        {
+            view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.image_list_row, parent, false);
+            return new ReceivedImageHolder(view);
+        }
+
 
         return null;
     }
@@ -114,12 +134,18 @@ public class MessageAdapter extends RecyclerView.Adapter {
             case VIEW_TYPE_MESSAGE_SENT:
                 ((SentMessageHolder) holder).bind(movie);
                 break;
-
             case VIEW_TYPE_MESSAGE_RECEIVED:
                 ((ReceivedMessageHolder) holder).bind(movie);
                 break;
             case VIEW_TYPE_SERVER:
                 ((ServerMessageHolder) holder).bind(movie);
+                break;
+            case VIEW_TYPE_IMAGE_SENT:
+                ((SentImageHolder) holder).bind(movie);
+                break;
+            case VIEW_TYPE_IMAGE_RECEIVED:
+                ((ReceivedImageHolder) holder).bind(movie);
+                break;
         }
 
     }
@@ -178,6 +204,45 @@ public class MessageAdapter extends RecyclerView.Adapter {
         {
             message.setText(boundedMessage.getMessage());
             time.setText(boundedMessage.getTime());
+        }
+    }
+
+    private class ReceivedImageHolder extends RecyclerView.ViewHolder{
+        TextView user, time;
+        ImageView picture;
+
+        ReceivedImageHolder(View view){
+            super(view);
+            picture = view.findViewById(R.id.picture);
+            user = view.findViewById(R.id.user);
+            time = view.findViewById(R.id.time);
+        }
+
+        void bind(Message boundedMessage)
+        {
+            picture.setImageBitmap(boundedMessage.getImage());
+            time.setText(boundedMessage.getTime());
+            user.setText(boundedMessage.getUser());
+        }
+    }
+
+    private class SentImageHolder extends RecyclerView.ViewHolder{
+        TextView time, user;
+        ImageView picture;
+
+        SentImageHolder(View view)
+        {
+            super(view);
+            picture = view.findViewById(R.id.picture);
+            time = view.findViewById(R.id.time);
+            user = view.findViewById(R.id.user);
+        }
+
+        void bind(Message boundedMessage)
+        {
+            picture.setImageBitmap(boundedMessage.getImage());
+            time.setText(boundedMessage.getTime());
+            user.setText("Me ");
         }
     }
 }

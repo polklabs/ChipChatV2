@@ -1,8 +1,11 @@
 package com.polklabs.chipchat.backend;
 
+import android.graphics.Bitmap;
+
 public class Message {
     private String message, user, time;
-    private boolean sentByMe;
+    private boolean sentByMe, isImage;
+    private Bitmap image;
 
     public Message(){}
 
@@ -13,9 +16,17 @@ public class Message {
         this.sentByMe = false;
     }
 
+    public void setImage(Bitmap image){ this.image = image;}
+
+    public Bitmap getImage(){ return this.image; }
+
     public void setSentByMe(){ this.sentByMe = true;}
 
     public boolean isSentByMe(){return this.sentByMe;}
+
+    public void setIsImage(){this.isImage = true;}
+
+    public boolean isImage(){return this.isImage;}
 
     public String getMessage() {
         return message;
