@@ -48,6 +48,10 @@ public class GalleryActivity  extends AppCompatActivity{
     private String nameString = "";
     private View lastImage;
 
+    private ArrayList<LoadImageTask> task;
+
+    private App appState;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,12 +90,25 @@ public class GalleryActivity  extends AppCompatActivity{
             MAX_COUNT = MAX_COUNT_LANDSCAPE;
 
         size = (screen.x/MAX_COUNT);
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        appState.mBitmapCache.clear();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        task = new ArrayList<>();
 
         for(String s : paths){
             addImages(s);
         }
 
-        final App appState = ((App)this.getApplication());
+        appState = ((App)this.getApplication());
 
         for(final ImageView image : images){
             final String contentDesc = image.getContentDescription().toString();
@@ -101,20 +118,22 @@ public class GalleryActivity  extends AppCompatActivity{
                 image.invalidate();
                 image.refreshDrawableState();
             }else{
-                new LoadImageTask(new LoadImageTask.Listener() {
+                task.add(new LoadImageTask(new LoadImageTask.Listener() {
                     @Override
                     public void onImageLoad(Bitmap bitmap) {
-                        //appState.mBitmapCache.put(contentDesc, bitmap);
+                        appState.mBitmapCache.put(contentDesc, bitmap);
                         image.setImageBitmap(bitmap);
                         image.invalidate();
                         image.refreshDrawableState();
+                        task.remove(0);
                     }
 
                     @Override
                     public void onImageLoadError() {
                         image.setVisibility(View.GONE);
                     }
-                }, contentDesc).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
+                }, contentDesc));
+                task.get(task.size()-1).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
             }
         }
     }
@@ -162,6 +181,14 @@ public class GalleryActivity  extends AppCompatActivity{
                     }
                 }
             }
+        }
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        for(LoadImageTask singleTask : task){
+            singleTask.cancel(true);
         }
     }
 
