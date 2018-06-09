@@ -51,6 +51,8 @@ public class ChatRoom extends AsyncTask<String, String, String> {
     }
     public          String username = "";                //Users username
     public          String password = "";
+    public boolean local = false;
+    public boolean unListed = false;
     public          String name = "";
     public          Socket sock;                    //Socket to server
 
@@ -108,6 +110,8 @@ public class ChatRoom extends AsyncTask<String, String, String> {
             case "join":
                 this.password = paramArray[4];
                 this.name = paramArray[3];
+                this.local = paramArray[6].equals("true");
+                this.unListed = paramArray[7].equals("true");
                 boolean joined = false;
                 try {
                     joined = join();
