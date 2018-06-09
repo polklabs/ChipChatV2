@@ -54,6 +54,8 @@ public class LoadImageTask extends AsyncTask<String, Void, Bitmap> {
     //Allows the view to be updated as images load
     @Override
     protected void onPostExecute(Bitmap result){
+        if(isCancelled()) return;
+
         if(null != result){
             listener.onImageLoad(result);
         } else {

@@ -282,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
                     tState = addresses.get(0).getAdminArea();
                     tCity = addresses.get(0).getLocality();
                 }
-            }catch(IOException e){
+            }catch(IOException | NullPointerException e){
                 tCity = "";
                 tState = "";
             }

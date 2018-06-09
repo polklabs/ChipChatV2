@@ -1,11 +1,19 @@
 package com.polklabs.chipchat;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
+import android.nfc.NdefMessage;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.Ndef;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.support.annotation.NonNull;
+import android.support.v4.app.NotificationCompat;
 import android.util.Base64;
 import android.util.Log;
 import android.view.SubMenu;
@@ -45,7 +53,7 @@ import java.util.List;
 import static com.polklabs.chipchat.gallery.LoadImageTask.calculateInSampleSize;
 
 public class Room extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, Listener {
 
     Context mContext;
 
@@ -56,11 +64,19 @@ public class Room extends AppCompatActivity
 
     App appState;
 
+    String CHANNEL_ID = "IDK";
+    private boolean isActive;
+
     private List<Message> messageList = new ArrayList<>();
     private MessageAdapter mAdapter;
     private client messageClient;
     private DrawerLayout drawer;
     private NavigationView navigationView;
+    private boolean isWrite = false;
+    private NFCWriteFragment mNfcWriteFragment;
+    private boolean isDialogDisplayed = false;
+    private NfcAdapter mNfcAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -126,6 +142,7 @@ public class Room extends AppCompatActivity
                     long[] pattern = {0, 100, 50, 100};
                     v.vibrate(pattern, -1);
                 }
+                Notify(message);
             }
 
             @Override
@@ -149,6 +166,7 @@ public class Room extends AppCompatActivity
                     long[] pattern = {0, 100, 50, 100};
                     v.vibrate(pattern, -1);
                 }
+                Notify(message);
             }
         });
         appState.chatRoom.loadedRoom = true;
@@ -221,6 +239,8 @@ public class Room extends AppCompatActivity
         }catch(NullPointerException e){
             Log.d("ChipChat", "Could not set title.");
         }
+
+        initNFC();
     }
 
     private void setUserList(JSONArray list){
@@ -241,6 +261,29 @@ public class Room extends AppCompatActivity
         }
         SubMenu sub = menu.addSubMenu("Settings");
         sub.add(0, R.id.writeNFC, 0, "Save room to NFC");
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        IntentFilter tagDetected = new IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED);
+        IntentFilter ndefDetected = new IntentFilter(NfcAdapter.ACTION_NDEF_DISCOVERED);
+        IntentFilter techDetected = new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED);
+        IntentFilter[] nfcIntentFilter = new IntentFilter[]{techDetected,tagDetected,ndefDetected};
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        if(mNfcAdapter!= null)
+            mNfcAdapter.enableForegroundDispatch(this, pendingIntent, nfcIntentFilter, null);
+        isActive = true;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(mNfcAdapter!= null)
+            mNfcAdapter.disableForegroundDispatch(this);
+        isActive = false;
     }
 
     @Override
@@ -319,14 +362,63 @@ public class Room extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+
+        Log.d("ChipChat", "onNewIntent: "+intent.getAction());
+
+        if(tag != null) {
+
+            Ndef ndef = Ndef.get(tag);
+
+            if (isDialogDisplayed) {
+
+                if (isWrite) {
+
+                    String messageToWrite = appState.chatRoom.name + ";"+ appState.chatRoom.password+";"+ appState.chatRoom.local + ";" + appState.chatRoom.unListed;
+
+                    mNfcWriteFragment = (NFCWriteFragment) getFragmentManager().findFragmentByTag(NFCWriteFragment.TAG);
+                    mNfcWriteFragment.onNfcDetected(ndef,messageToWrite);
+
+
+                }
+            }
+        }
+    }
+
+
+    private void initNFC(){
+
+        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
+    }
+
+    private void showWriteFragment() {
+
+        Log.d("ChipChat", "Waiting for nfc");
+
+        isWrite = true;
+
+        mNfcWriteFragment = (NFCWriteFragment) getFragmentManager().findFragmentByTag(NFCWriteFragment.TAG);
+
+        if (mNfcWriteFragment == null) {
+
+            mNfcWriteFragment = NFCWriteFragment.newInstance();
+        }
+        mNfcWriteFragment.show(getFragmentManager(),NFCWriteFragment.TAG);
+
+    }
+
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-
         if(id == R.id.writeNFC){
-            Toast.makeText(mContext, "Writing NFC...", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(mContext, "Writing NFC...", Toast.LENGTH_SHORT).show();
+            showWriteFragment();
+
         }else{
             if(!appState.chatRoom.username.equals(item.getTitle().toString())) {
                 UserDialogFragment options = new UserDialogFragment();
@@ -343,5 +435,33 @@ public class Room extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.END);
         return true;
+    }
+
+    @Override
+    public void onDialogDisplayed() {
+
+        isDialogDisplayed = true;
+    }
+
+    @Override
+    public void onDialogDismissed() {
+
+        isDialogDisplayed = false;
+        isWrite = false;
+    }
+
+    private void Notify(Message message) {
+        // notification implementation
+        if(!isActive) {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setAutoCancel(true)
+                    .setSmallIcon(R.drawable.tortilla_chip_kct_icon)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setContentTitle("Chip Chat")
+                    .setContentText(message.getUser() + ": "+ (message.isImage()?"Image":message.getMessage()));
+
+            notificationManager.notify(/*notification id*/1, notificationBuilder.build());
+        }
     }
 }
