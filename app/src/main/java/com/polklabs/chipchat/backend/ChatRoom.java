@@ -17,7 +17,6 @@ import javax.crypto.IllegalBlockSizeException;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import org.apache.commons.codec.binary.ApacheBase64;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,7 +46,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
         void publishText(String text);
         void returnText(String text);
         void setList(boolean popular, JSONArray list);
-        void publishMessage(String sender, String body);
+        void publishMessage(String sender, String body, boolean isPrivate);
         void publishImage(String sender, String  data);
     }
     public          String username = "";                //Users username
@@ -161,7 +160,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                 listener.publishText(values[1]);
                 break;
             case "text":
-                listener.publishMessage(values[1], values[2]);
+                listener.publishMessage(values[1], values[2], values[3].equals("true"));
                 break;
             case "image":
                 listener.publishImage(values[1], values[2]);
@@ -210,7 +209,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
         obj.put("local", paramArray[6].equals("true"));
         obj.put("unlisted", paramArray[7].equals("true"));
 
-        if(!connectToServer()) return false;
+        if(connectToServer()) return false;
 
         out = new DataOutputStream(sock.getOutputStream());
         in = new DataInputStream(sock.getInputStream());
@@ -253,7 +252,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
      * @throws javax.crypto.BadPaddingException bad padding, data is the wrong number of bytes
      */
     private void init() throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, JSONException {
-        if(!connectToServer()) return;
+        if(connectToServer()) return;
 
         Log.d("ChipChat", "Connected to server.");
 
@@ -298,7 +297,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
         try{
             sock = new Socket();
             sock.connect(new InetSocketAddress(IP, PORT), 750);
-            return true;
+            return false;
         }catch(UnknownHostException e){
             //Should never happen
             Log.d("ChipChat","::Unknown server host.");
@@ -307,7 +306,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
             Log.d("ChipChat", "::Could not connect to server.");
         }
         errorType = 7;
-        return false;
+        return true;
     }
 
     /**
@@ -328,7 +327,7 @@ public class ChatRoom extends AsyncTask<String, String, String> {
                     case "message":
                         JSONObject inner = new JSONObject(DE.decryptOnce(message.getString("message"), null, true));
                         if(inner.getString("type").equals("text")){
-                            publishProgress( "text", inner.getString("sender"), DE.decryptOnce(inner.getString("body"), inner.getString("sender"), false));
+                            publishProgress( "text", inner.getString("sender"), DE.decryptOnce(inner.getString("body"), inner.getString("sender"), false), inner.getBoolean("private")? "true" : "false");
                         }else if(inner.getString("type").equals("image")){
                             publishProgress("image", inner.getString("sender"), DE.decryptOnce(inner.getString("body"), inner.getString("sender"), false));
                         }

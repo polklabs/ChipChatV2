@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -31,7 +32,6 @@ public class GalleryActivity  extends AppCompatActivity{
 
     private TableLayout mLayout;
     private TableRow mRow;
-    private TextView imagePath;
 
     private int count = 0;
     private int MAX_COUNT = 4;
@@ -42,8 +42,9 @@ public class GalleryActivity  extends AppCompatActivity{
 
     private ArrayList<ImageView> images = new ArrayList<>();
 
-    private String pathString;
-    private String nameString;
+    private String pathString = "";
+    private String nameString = "";
+    private View lastImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +71,7 @@ public class GalleryActivity  extends AppCompatActivity{
         }
 
         mLayout = findViewById(R.id.imageLayout);
-        imagePath = findViewById(R.id.path);
+        mLayout.removeAllViews();
 
         Point screen = new Point();
         getWindowManager().getDefaultDisplay().getSize(screen);
@@ -83,11 +84,6 @@ public class GalleryActivity  extends AppCompatActivity{
             MAX_COUNT = MAX_COUNT_LANDSCAPE;
 
         size = (screen.x/MAX_COUNT);
-    }
-
-    @Override
-    protected void onResume(){
-        super.onResume();
 
         for(String s : paths){
             addImages(s);
@@ -119,7 +115,6 @@ public class GalleryActivity  extends AppCompatActivity{
                 }, contentDesc).executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
             }
         }
-
     }
 
     private void addImages(String directory){
@@ -141,7 +136,7 @@ public class GalleryActivity  extends AppCompatActivity{
                 int i = file.getName().lastIndexOf('.');
                 if(i >= 0){ extension = file.getName().substring(i+1);}
 
-                if(extension.toUpperCase().matches("^.*?(JPEG|JPG|PNG|GIF|AVI|MP4).*$")){
+                if(extension.toUpperCase().matches("^.*?(JPEG|JPG|PNG|GIF).*$")){
                     if(count == MAX_COUNT) count = 0;
                     if(count == 0){
                         mRow = new TableRow(GalleryActivity.this);
@@ -173,9 +168,26 @@ public class GalleryActivity  extends AppCompatActivity{
             public void onClick(View v){
                 ImageView img = (ImageView) v;
 
-                pathString = img.getContentDescription().toString();
-                nameString = img.getTag().toString();
-                imagePath.setText(img.getContentDescription().toString());
+                String oldPath = pathString;
+
+                if(lastImage != null){
+                    pathString = "";
+                    nameString = "";
+                    ((ImageView)lastImage).setForeground(ContextCompat.getDrawable(getApplicationContext(), R.drawable.overlay_null));
+                }
+
+                if(oldPath.equals(img.getContentDescription().toString())){
+                    pathString = "";
+                    nameString = "";
+                    img.setForeground(ContextCompat.getDrawable(getApplicationContext(), R.drawable.overlay_null));
+                }else {
+                    pathString = img.getContentDescription().toString();
+                    nameString = img.getTag().toString();
+                    img.setForeground(ContextCompat.getDrawable(getApplicationContext(), R.drawable.overlay_blue));
+                }
+                img.invalidate();
+                img.refreshDrawableState();
+                lastImage = v;
             }
         };
     }

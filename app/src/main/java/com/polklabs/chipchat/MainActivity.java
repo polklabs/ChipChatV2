@@ -33,6 +33,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -233,6 +234,10 @@ public class MainActivity extends AppCompatActivity {
                 ((TextView)view.findViewById(R.id.textUsers)).setText(("Users: " + list.getJSONObject(i).getInt("size")));
                 if(list.getJSONObject(i).getBoolean("lock")){
                     view.findViewById(R.id.imageLock).setVisibility(View.VISIBLE);
+                    ((ImageView)view.findViewById(R.id.imageLock)).setImageDrawable(ContextCompat.getDrawable(mContext, R.drawable.ic_lock_lock));
+                }
+                if(odd){
+                    view.findViewById(R.id.frame).setBackgroundColor(ContextCompat.getColor(mContext, R.color.light_grey));
                 }
                 view.setOnClickListener(roomClick);
                 mList.addView(view);
@@ -295,7 +300,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void returnText(String text){
                 if(!text.equals("")) {
-                    //Toast.makeText(mContext, text, Toast.LENGTH_SHORT).show();
                     createList(new JSONArray(), true);
                     createList(new JSONArray(), false);
                 }
@@ -307,7 +311,7 @@ public class MainActivity extends AppCompatActivity {
                 createList(list, popular);
             }
             @Override
-            public void publishMessage(String sender, String body) { }
+            public void publishMessage(String sender, String body, boolean isPrivate) { }
             @Override
             public void publishImage(String sender, String data) { }
         }, "init", tState, tCity);

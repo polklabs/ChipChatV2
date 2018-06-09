@@ -4,7 +4,7 @@ import android.graphics.Bitmap;
 
 public class Message {
     private String message, user, time;
-    private boolean sentByMe, isImage;
+    private boolean sentByMe, isImage, isPrivate;
     private Bitmap image;
 
     public Message(){}
@@ -14,7 +14,12 @@ public class Message {
         this.user = user;
         this.time = time;
         this.sentByMe = false;
+        this.isPrivate = false;
     }
+
+    public void setPrivate(){ this.isPrivate = true; }
+
+    public boolean getPrivate(){ return this.isPrivate; }
 
     public void setImage(Bitmap image){ this.image = image;}
 

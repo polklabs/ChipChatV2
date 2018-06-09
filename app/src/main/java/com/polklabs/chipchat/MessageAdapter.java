@@ -1,5 +1,13 @@
 package com.polklabs.chipchat;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -7,9 +15,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.polklabs.chipchat.backend.Message;
 
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 public class MessageAdapter extends RecyclerView.Adapter {
@@ -21,6 +31,8 @@ public class MessageAdapter extends RecyclerView.Adapter {
     private static final int VIEW_TYPE_IMAGE_RECEIVED = 4;
     //private String Server;
 
+    private Context mContext;
+    public void setContext(Context context){ this.mContext = context; }
 
     private List<Message> messageList;
     //private String me;
@@ -37,7 +49,7 @@ public class MessageAdapter extends RecyclerView.Adapter {
     }
 */
 
-    public MessageAdapter(List<Message> messageList) {
+    MessageAdapter(List<Message> messageList) {
         this.messageList = messageList;
         //me = user;
     }
@@ -50,7 +62,7 @@ public class MessageAdapter extends RecyclerView.Adapter {
     //returns view type to use depending on who sent message
     @Override
     public int getItemViewType(int position){
-        Message message = (Message) messageList.get(position);
+        Message message = messageList.get(position);
         //spagootle code
 
         //end of spagootle code
@@ -74,7 +86,8 @@ public class MessageAdapter extends RecyclerView.Adapter {
 
     //uses appropriate layout given view type
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType){
+    @NonNull
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType){
         View view;
 
         if(viewType == VIEW_TYPE_MESSAGE_SENT)
@@ -108,8 +121,7 @@ public class MessageAdapter extends RecyclerView.Adapter {
             return new ReceivedImageHolder(view);
         }
 
-
-        return null;
+        return new ReceivedImageHolder(new View(mContext));
     }
 
 
@@ -126,7 +138,7 @@ public class MessageAdapter extends RecyclerView.Adapter {
 
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Message movie = messageList.get(position);
 
         switch(holder.getItemViewType())
@@ -155,24 +167,42 @@ public class MessageAdapter extends RecyclerView.Adapter {
 
     private class ReceivedMessageHolder extends RecyclerView.ViewHolder{
         TextView message, user, time;
+        View parent;
 
         ReceivedMessageHolder(View view){
             super(view);
             message = view.findViewById(R.id.message);
             user = view.findViewById(R.id.user);
             time = view.findViewById(R.id.time);
+            parent = view;
         }
 
-        void bind(Message boundedMessage)
+        void bind(final Message boundedMessage)
         {
             message.setText(boundedMessage.getMessage());
             time.setText(boundedMessage.getTime());
             user.setText(boundedMessage.getUser());
+            if(boundedMessage.getPrivate()) {
+                message.setTextColor(ContextCompat.getColor(mContext, R.color.light_blue));
+                message.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mContext, R.color.colorPrimaryDark)));
+            }
+            parent.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("simple text", boundedMessage.getMessage());
+                    if(clipboard != null)
+                        clipboard.setPrimaryClip(clip);
+                    Toast.makeText(mContext, "Copied to clipboard.", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+            });
         }
     }
 
     private class SentMessageHolder extends RecyclerView.ViewHolder{
         TextView message, time, user;
+        View parent;
 
         SentMessageHolder(View view)
         {
@@ -180,30 +210,59 @@ public class MessageAdapter extends RecyclerView.Adapter {
             message = view.findViewById(R.id.message);
             time = view.findViewById(R.id.time);
             user = view.findViewById(R.id.user);
+            parent = view;
         }
 
-        void bind(Message boundedMessage)
+        void bind(final Message boundedMessage)
         {
             message.setText(boundedMessage.getMessage());
             time.setText(boundedMessage.getTime());
-            user.setText("Me ");
+            user.setText(mContext.getResources().getText(R.string.me));
+            if(boundedMessage.getPrivate()) {
+                message.setTextColor(ContextCompat.getColor(mContext, R.color.light_blue));
+                message.setBackgroundTintList(ColorStateList.valueOf(ContextCompat.getColor(mContext, R.color.colorPrimaryDark)));
+            }
+            parent.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("simple text", boundedMessage.getMessage());
+                    if(clipboard != null)
+                        clipboard.setPrimaryClip(clip);
+                    Toast.makeText(mContext, "Copied to clipboard.", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+            });
         }
     }
 
     private class ServerMessageHolder extends RecyclerView.ViewHolder{
         TextView message, time;
+        View parent;
 
         ServerMessageHolder(View view)
         {
             super(view);
             message = view.findViewById(R.id.message);
             time = view.findViewById(R.id.time);
+            parent = view;
         }
 
-        void bind(Message boundedMessage)
+        void bind(final Message boundedMessage)
         {
             message.setText(boundedMessage.getMessage());
             time.setText(boundedMessage.getTime());
+            parent.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    ClipboardManager clipboard = (ClipboardManager) mContext.getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("simple text", boundedMessage.getMessage());
+                    if(clipboard != null)
+                        clipboard.setPrimaryClip(clip);
+                    Toast.makeText(mContext, "Copied to clipboard.", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+            });
         }
     }
 
@@ -218,11 +277,22 @@ public class MessageAdapter extends RecyclerView.Adapter {
             time = view.findViewById(R.id.time);
         }
 
-        void bind(Message boundedMessage)
+        void bind(final Message boundedMessage)
         {
             picture.setImageBitmap(boundedMessage.getImage());
             time.setText(boundedMessage.getTime());
             user.setText(boundedMessage.getUser());
+            picture.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(mContext, ImageFull.class);
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    boundedMessage.getImage().compress(Bitmap.CompressFormat.PNG, 100, stream);
+                    intent.putExtra("image", stream.toByteArray());
+                    intent.putExtra("from", boundedMessage.getUser());
+                    mContext.startActivity(intent);
+                }
+            });
         }
     }
 
@@ -238,11 +308,22 @@ public class MessageAdapter extends RecyclerView.Adapter {
             user = view.findViewById(R.id.user);
         }
 
-        void bind(Message boundedMessage)
+        void bind(final Message boundedMessage)
         {
             picture.setImageBitmap(boundedMessage.getImage());
             time.setText(boundedMessage.getTime());
-            user.setText("Me ");
+            user.setText(mContext.getResources().getText(R.string.me));
+            picture.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(mContext, ImageFull.class);
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    boundedMessage.getImage().compress(Bitmap.CompressFormat.PNG, 100, stream);
+                    intent.putExtra("image", stream.toByteArray());
+                    intent.putExtra("from", boundedMessage.getUser());
+                    mContext.startActivity(intent);
+                }
+            });
         }
     }
 }

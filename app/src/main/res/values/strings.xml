@@ -15,4 +15,10 @@
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_room">Room</string>
+    <string name="enter_message">Enter a Message</string>
+    <string-array name="options">
+        <item>Report/Kick</item>
+        <item>Private Message</item>
+    </string-array>
+    <string name="me">Me </string>
 </resources>

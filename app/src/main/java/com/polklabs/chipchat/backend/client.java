@@ -5,7 +5,6 @@ import android.os.AsyncTask;
 import android.util.Base64;
 import android.util.Log;
 
-import org.apache.commons.codec.binary.ApacheBase64;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -17,6 +16,7 @@ public class client extends AsyncTask<String, String, String> {
     public ArrayList<String> commands = new ArrayList<>();
     public ArrayList<String> messages = new ArrayList<>();
     public ArrayList<Bitmap> images = new ArrayList<>();
+    public ArrayList<String> justSend = new ArrayList<>();
 
     public boolean stop;
 
@@ -38,32 +38,52 @@ public class client extends AsyncTask<String, String, String> {
         }
 
         while(true){
+            boolean sentStuff = false;
+
             if(stop){
                 Command("close");
                 stop = false;
                 return "";
             }
 
-            while(messages.size() > 0){
+            if(messages.size() > 0){
                 Message(messages.get(0));
                 messages.remove(0);
+                sentStuff = true;
             }
-            while(images.size() > 0){
+            if(images.size() > 0){
                 Bitmap bmp = images.get(0);
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                bmp.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                bmp.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                 byte[] b = stream.toByteArray();
                 Image(Base64.encodeToString(b, Base64.DEFAULT));
                 images.remove(0);
+                sentStuff = true;
             }
-            while(commands.size() > 0){
+            if(commands.size() > 0){
                 Command(commands.get(0));
                 commands.remove(0);
+                sentStuff = true;
+            }
+            if(justSend.size() > 0){
+                byte[] s = justSend.get(0).getBytes();
+                try {
+                    out.writeInt(s.length);
+                    out.write(s);
+                    out.flush();
+                }catch (IOException e){}
+                finally {
+                    justSend.remove(0);
+                }
+                sentStuff = true;
             }
 
-            try {
-                Thread.sleep(500);
-            }catch (Exception e){}
+            if(!sentStuff) {
+                try {
+                    Thread.sleep(500);
+                } catch (Exception e) {
+                }
+            }
         }
     }
 
@@ -78,6 +98,7 @@ public class client extends AsyncTask<String, String, String> {
                         JSONObject obj = new JSONObject();
                         obj.put("type", "text");
                         obj.put("sender", chatRoom.username);
+                        obj.put("private", false);
                         obj.put("body", chatRoom.DE.encryptOnce(text, null, true));
 
                         JSONObject messageFinal = new JSONObject();

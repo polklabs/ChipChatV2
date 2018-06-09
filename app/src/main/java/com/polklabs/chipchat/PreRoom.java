@@ -16,7 +16,6 @@ import android.os.Build;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
@@ -64,7 +63,7 @@ public class PreRoom extends AppCompatActivity {
         mContext = getApplicationContext();
 
         mRoom = findViewById(R.id.name);
-        mUsername = findViewById(R.id.username);
+        mUsername = findViewById(R.id.privateMessage);
         mPassword = findViewById(R.id.password);
         mLocal = findViewById(R.id.localButton);
         mPopular = findViewById(R.id.listedButton);
@@ -102,16 +101,10 @@ public class PreRoom extends AppCompatActivity {
             mRoom.setVisibility(View.GONE);
             mLocal.setVisibility(View.GONE);
             mPopular.setVisibility(View.GONE);
-            try {
+            if(getActionBar() != null)
                 getActionBar().setTitle("Join Room: " + tRoom);
-            }catch(NullPointerException e){
-                Log.d("ChipChat", "Could not set title.");
-            }
-            try {
+            if(getSupportActionBar() != null)
                 getSupportActionBar().setTitle("Join Room: " + tRoom);
-            }catch(NullPointerException e){
-                Log.d("ChipChat", "Could not set title.");
-            }
 
             mPassword.setCompletionHint("Password");
             mPassword.setHint("Password");
@@ -124,14 +117,18 @@ public class PreRoom extends AppCompatActivity {
 
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             LocationManager locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            Location location = null;
+            if(locationManager != null)
+                    location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             Geocoder gcd = new Geocoder(getBaseContext(), Locale.getDefault());
             List<Address> addresses;
             try{
-                addresses = gcd.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
-                if(addresses.size() > 0){
-                    tState = addresses.get(0).getAdminArea();
-                    tCity = addresses.get(0).getLocality();
+                if(location != null) {
+                    addresses = gcd.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                    if (addresses.size() > 0) {
+                        tState = addresses.get(0).getAdminArea();
+                        tCity = addresses.get(0).getLocality();
+                    }
                 }
             }catch(IOException e){
                 tCity = "";
@@ -148,7 +145,8 @@ public class PreRoom extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                if(imm != null)
+                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
                 mPassword.setError(null);
                 mUsername.setError(null);
@@ -170,7 +168,7 @@ public class PreRoom extends AppCompatActivity {
                     @Override
                     public void setList(boolean popular, JSONArray list) { }
                     @Override
-                    public void publishMessage(String sender, String body) { }
+                    public void publishMessage(String sender, String body, boolean isPrivate) { }
                     @Override
                     public void publishImage(String sender, String data) { }
 

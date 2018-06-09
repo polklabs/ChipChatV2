@@ -5,6 +5,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.support.annotation.NonNull;
 import android.util.Base64;
 import android.util.Log;
 import android.view.SubMenu;
@@ -33,10 +34,8 @@ import com.polklabs.chipchat.backend.ChatRoom;
 import com.polklabs.chipchat.backend.Message;
 import com.polklabs.chipchat.backend.client;
 
-import org.apache.commons.codec.binary.ApacheBase64;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.w3c.dom.Text;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -75,10 +74,10 @@ public class Room extends AppCompatActivity
         setSupportActionBar(toolbar);
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        try { getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        }catch (NullPointerException e){}
-        try { getSupportActionBar().setDisplayShowHomeEnabled(true);
-        }catch (NullPointerException e){}
+        if(getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
 
         //App references ---------------------------------------------------------------------------
         appState = (App)getApplication();
@@ -90,6 +89,7 @@ public class Room extends AppCompatActivity
         mSendButton = findViewById(R.id.sendMessage);
         mAddImage = findViewById(R.id.addImage);
         mAdapter = new MessageAdapter(messageList);
+        mAdapter.setContext(mContext);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         mMessageList.setLayoutManager(mLayoutManager);
         mMessageList.setItemAnimator(new DefaultItemAnimator());
@@ -106,11 +106,12 @@ public class Room extends AppCompatActivity
             }
 
             @Override
-            public void publishMessage(String sender, String body) {
+            public void publishMessage(String sender, String body, boolean isPrivate) {
                 SimpleDateFormat df = new SimpleDateFormat("HH:mm");
                 String date = df.format(Calendar.getInstance().getTime());
 
-                Message message = new Message(body, "\t"+sender+"\t", date);
+                Message message = new Message(body, sender, date);
+                if(isPrivate)message.setPrivate();
                 messageList.add(message);
                 mAdapter.notifyDataSetChanged();
                 mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
@@ -131,7 +132,7 @@ public class Room extends AppCompatActivity
                 SimpleDateFormat df = new SimpleDateFormat("HH:mm");
                 String date = df.format(Calendar.getInstance().getTime());
 
-                Message message = new Message(data, "\t"+sender+"\t", date);
+                Message message = new Message(data, sender, date);
                 message.setIsImage();
                 Bitmap bitmap = BitmapFactory.decodeByteArray(bitData, 0, bitData.length);
                 message.setImage(bitmap);
@@ -167,10 +168,9 @@ public class Room extends AppCompatActivity
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-                }catch(NullPointerException e){}
+                    if(imm != null)
+                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
                 if(!mEditText.getText().toString().equals("")) {
                     messageClient.messages.add(mEditText.getText().toString());
@@ -185,6 +185,7 @@ public class Room extends AppCompatActivity
                     mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
                 }
                 mEditText.setText("");
+                mEditText.clearFocus();
             }
         });
 
@@ -196,8 +197,8 @@ public class Room extends AppCompatActivity
             }
         });
 
-        ((TextView)navigationView.getHeaderView(0).findViewById(R.id.usernameText)).setText("Username: \'"+appState.chatRoom.username+"\'");
-        ((TextView)navigationView.getHeaderView(0).findViewById(R.id.locationText)).setText("Password: \'"+appState.chatRoom.password+"\'");
+        ((TextView)navigationView.getHeaderView(0).findViewById(R.id.usernameText)).setText(("Username: \'"+appState.chatRoom.username+"\'"));
+        ((TextView)navigationView.getHeaderView(0).findViewById(R.id.locationText)).setText(("Password: \'"+appState.chatRoom.password+"\'"));
 
         try {
             getActionBar().setTitle("Chat Room: " + appState.chatRoom.name);
@@ -222,10 +223,13 @@ public class Room extends AppCompatActivity
                 if(i == 1){
                     temp.setIcon(R.drawable.shield2);
                 }
+                if(list.getString(i).equals(appState.chatRoom.username)){
+                    temp.setIcon(R.drawable.plain_circle);
+                }
             }catch(JSONException e){}
         }
         SubMenu sub = menu.addSubMenu("Settings");
-        sub.add(0, R.id.writeNFC, 0, "Write to NFC");
+        sub.add(0, R.id.writeNFC, 0, "Save room to NFC");
     }
 
     @Override
@@ -240,22 +244,25 @@ public class Room extends AppCompatActivity
         if(requestCode == 12){
             if(resultCode == RESULT_OK){
                 String bitmapPath = data.getStringExtra("path");
+                if(bitmapPath.equals(""))return;
                 final BitmapFactory.Options options = new BitmapFactory.Options();
                 options.inJustDecodeBounds = true;
                 BitmapFactory.decodeFile(bitmapPath, options);
 
                 //Adjust sample size
-                options.inSampleSize = calculateInSampleSize(options, GalleryActivity.size/5, GalleryActivity.size/5);
+                //options.inSampleSize = calculateInSampleSize(options, GalleryActivity.size/3, GalleryActivity.size/3);
+                options.inSampleSize = calculateInSampleSize(options, 200, 200);
 
                 //Return sampled bitmap
                 options.inJustDecodeBounds = false;
                 Bitmap image = BitmapFactory.decodeFile(bitmapPath, options);
+                Log.d("ChipChat", "Image bytes: "+image.getByteCount());
                 messageClient.images.add(image);
 
                 SimpleDateFormat df = new SimpleDateFormat("HH:mm");
                 String date = df.format(Calendar.getInstance().getTime());
 
-                Message message = new Message("Sent image: "+bitmapPath, appState.chatRoom.username+"\t", date+"\t");
+                Message message = new Message("Sent image: "+bitmapPath, appState.chatRoom.username, date);
                 message.setSentByMe();
                 message.setIsImage();
                 message.setImage(image);
@@ -303,14 +310,23 @@ public class Room extends AppCompatActivity
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
         if(id == R.id.writeNFC){
             Toast.makeText(mContext, "Writing NFC...", Toast.LENGTH_SHORT).show();
         }else{
-            messageClient.commands.add("kick "+item.getTitle());
+            if(!appState.chatRoom.username.equals(item.getTitle().toString())) {
+                UserDialogFragment options = new UserDialogFragment();
+                options.setmContext(mContext)
+                        .setUsername(item.getTitle().toString())
+                        .setMessageClient(messageClient)
+                        .setChatRoom(appState.chatRoom)
+                        .setmAdapter(mAdapter)
+                        .setMessageList(messageList);
+                options.show(getFragmentManager(), "User Dialog");
+            }
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);

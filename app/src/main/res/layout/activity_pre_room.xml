@@ -89,7 +89,7 @@
                     android:importantForAutofill="no"
                     android:inputType="text"
                     android:maxLength="30"
-                    android:nextFocusDown="@id/username" />
+                    android:nextFocusDown="@id/privateMessage" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -99,7 +99,7 @@
                 android:gravity="center">
 
                 <AutoCompleteTextView
-                    android:id="@+id/username"
+                    android:id="@+id/privateMessage"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
