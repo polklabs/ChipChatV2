@@ -289,7 +289,7 @@ public class MessageAdapter extends RecyclerView.Adapter {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     boundedMessage.getImage().compress(Bitmap.CompressFormat.PNG, 100, stream);
                     intent.putExtra("image", stream.toByteArray());
-                    intent.putExtra("from", boundedMessage.getUser());
+                    intent.putExtra("from", "Image from: "+boundedMessage.getUser());
                     mContext.startActivity(intent);
                 }
             });
@@ -320,7 +320,7 @@ public class MessageAdapter extends RecyclerView.Adapter {
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     boundedMessage.getImage().compress(Bitmap.CompressFormat.PNG, 100, stream);
                     intent.putExtra("image", stream.toByteArray());
-                    intent.putExtra("from", boundedMessage.getUser());
+                    intent.putExtra("from", "Image from: "+boundedMessage.getUser());
                     mContext.startActivity(intent);
                 }
             });

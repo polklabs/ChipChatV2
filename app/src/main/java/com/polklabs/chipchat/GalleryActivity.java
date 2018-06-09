@@ -4,8 +4,8 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
-import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -19,12 +19,14 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.TextView;
 
 import com.polklabs.chipchat.gallery.LoadImageTask;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.ArrayList;
+
+import static com.polklabs.chipchat.gallery.LoadImageTask.calculateInSampleSize;
 
 public class GalleryActivity  extends AppCompatActivity{
 
@@ -102,7 +104,7 @@ public class GalleryActivity  extends AppCompatActivity{
                 new LoadImageTask(new LoadImageTask.Listener() {
                     @Override
                     public void onImageLoad(Bitmap bitmap) {
-                        appState.mBitmapCache.put(contentDesc, bitmap);
+                        //appState.mBitmapCache.put(contentDesc, bitmap);
                         image.setImageBitmap(bitmap);
                         image.invalidate();
                         image.refreshDrawableState();
@@ -153,6 +155,7 @@ public class GalleryActivity  extends AppCompatActivity{
                         temp.setLayoutParams(new TableRow.LayoutParams(size, size));
                         temp.setScaleType((ImageView.ScaleType.CENTER_CROP));
                         temp.setOnClickListener(onClick());
+                        temp.setOnLongClickListener(longClick());
                         images.add(temp);
                         mRow.addView(temp);
                         count++;
@@ -173,7 +176,7 @@ public class GalleryActivity  extends AppCompatActivity{
                 if(lastImage != null){
                     pathString = "";
                     nameString = "";
-                    ((ImageView)lastImage).setForeground(ContextCompat.getDrawable(getApplicationContext(), R.drawable.overlay_null));
+                    lastImage.setForeground(ContextCompat.getDrawable(getApplicationContext(), R.drawable.overlay_null));
                 }
 
                 if(oldPath.equals(img.getContentDescription().toString())){
@@ -188,6 +191,23 @@ public class GalleryActivity  extends AppCompatActivity{
                 img.invalidate();
                 img.refreshDrawableState();
                 lastImage = v;
+            }
+        };
+    }
+
+    private View.OnLongClickListener longClick(){
+        return new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+
+
+                Intent intent = new Intent(getApplicationContext(), ImageFull.class);
+                intent.putExtra("self", true);
+                intent.putExtra("path", v.getContentDescription());
+                intent.putExtra("from", "Preview");
+                startActivity(intent);
+
+                return true;
             }
         };
     }

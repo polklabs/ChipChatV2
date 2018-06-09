@@ -37,7 +37,8 @@
             android:label="@string/title_activity_room"
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustResize"/>
         <activity
             android:name=".GalleryActivity"
             android:label="@string/title_activity_gallery"

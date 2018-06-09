@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
         //Save in global state
         appState = ((App)this.getApplication());
+        appState.mBitmapCache.clear();
         mContext = getApplicationContext();
 
         //View Objects
@@ -130,8 +131,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-
-        //Refresh();
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {

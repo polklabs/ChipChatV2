@@ -58,7 +58,6 @@ public class Room extends AppCompatActivity
 
     private List<Message> messageList = new ArrayList<>();
     private MessageAdapter mAdapter;
-
     private client messageClient;
     private DrawerLayout drawer;
     private NavigationView navigationView;
@@ -97,9 +96,13 @@ public class Room extends AppCompatActivity
 
         appState.chatRoom.setListener(new ChatRoom.Listener() {
             @Override
-            public void publishText(String text) { }
+            public void publishText(String text) {
+            }
+
             @Override
-            public void returnText(String text) { }
+            public void returnText(String text) {
+            }
+
             @Override
             public void setList(boolean popular, JSONArray list) {
                 setUserList(list);
@@ -111,16 +114,15 @@ public class Room extends AppCompatActivity
                 String date = df.format(Calendar.getInstance().getTime());
 
                 Message message = new Message(body, sender, date);
-                if(isPrivate)message.setPrivate();
+                if (isPrivate) message.setPrivate();
                 messageList.add(message);
                 mAdapter.notifyDataSetChanged();
-                mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
+                mMessageList.smoothScrollToPosition(mAdapter.getItemCount() - 1);
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 if (Build.VERSION.SDK_INT >= 26) {
                     ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect
                             .createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE));
-                }
-                else{
+                } else {
                     long[] pattern = {0, 100, 50, 100};
                     v.vibrate(pattern, -1);
                 }
@@ -138,32 +140,39 @@ public class Room extends AppCompatActivity
                 message.setImage(bitmap);
                 messageList.add(message);
                 mAdapter.notifyDataSetChanged();
-                mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
+                mMessageList.smoothScrollToPosition(mAdapter.getItemCount() - 1);
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 if (Build.VERSION.SDK_INT >= 26) {
                     ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(VibrationEffect
                             .createOneShot(150, VibrationEffect.DEFAULT_AMPLITUDE));
-                }
-                else{
+                } else {
                     long[] pattern = {0, 100, 50, 100};
                     v.vibrate(pattern, -1);
                 }
             }
         });
-
         appState.chatRoom.loadedRoom = true;
 
-        messageClient = new client(appState.chatRoom);
-        messageClient.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
-        mEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+        mMessageList.addOnLayoutChangeListener(new View.OnLayoutChangeListener(){
             @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if(hasFocus){
-                    mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
+            public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                       int oldLeft, int oldTop, int oldRight, int oldBottom){
+                if(bottom < oldBottom){
+                    mMessageList.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            mMessageList.smoothScrollToPosition(mAdapter.getItemCount()-1);
+                        }
+                    }, 100);
                 }
             }
         });
+
+        if(messageClient == null) {
+            messageClient = new client(appState.chatRoom);
+            messageClient.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+
 
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -197,8 +206,10 @@ public class Room extends AppCompatActivity
             }
         });
 
-        ((TextView)navigationView.getHeaderView(0).findViewById(R.id.usernameText)).setText(("Username: \'"+appState.chatRoom.username+"\'"));
-        ((TextView)navigationView.getHeaderView(0).findViewById(R.id.locationText)).setText(("Password: \'"+appState.chatRoom.password+"\'"));
+        if(appState.chatRoom != null) {
+            ((TextView) navigationView.getHeaderView(0).findViewById(R.id.usernameText)).setText(("Username: \'" + appState.chatRoom.username + "\'"));
+            ((TextView) navigationView.getHeaderView(0).findViewById(R.id.locationText)).setText(("Password: \'" + appState.chatRoom.password + "\'"));
+        }
 
         try {
             getActionBar().setTitle("Chat Room: " + appState.chatRoom.name);
